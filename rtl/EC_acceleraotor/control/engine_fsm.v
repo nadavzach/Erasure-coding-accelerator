@@ -23,59 +23,60 @@
 
 module module_name #(
 
-//=================================
-//  user parameters 
-//=================================
-	`include "global_parameters.v"
-//
-//=================================
-//  local parameters (DON'T CHANGE)
-//=================================
-
-//states:
-localparam INIT_ST			= 2'd0,
-localparam CALC_ST			= 2'd1,
-localparam FINISH_CALC_ST	= 2'd2
+	//=================================
+	//  user parameters 
+	//=================================
+		`include "global_parameters.v"
+	//
+	//=================================
+	//  local parameters (DON'T CHANGE)
+	//=================================
+	
+	//states:
+	localparam INIT_ST			= 2'd0,
+	localparam CALC_ST			= 2'd1,
+	localparam FINISH_CALC_ST	= 2'd2
 
 
 )(
-//===========
-//  inputs:
-//===========
+	//===========
+	//  inputs:
+	//===========
 
-input clk,
-input rstn,
-
-
-//user input - TODO - choose if it's a register or input to accelerator
-input start_eng,
-
-//input from control regs
-input MReg,
-
-//input from engine
-input eng_empty,
-
-//===========
-//  outputs:
-//===========
-
-
-//output to input buffer
-output cntrl_inbuff_rd_en,
-
-//output to output buffer
-output cntrl_outbuff_wr_en,
-
-//output to bitmatrix memory
-output [M_MAX-1:0] bitmatrix_nxt_col,
-output cntrl_bm_mem_rd_en,
-
-//output to engine
-output cntrl_eng_calc_eng,
-
-//output to registers
-output global_reg_wr_en
+	input clk,
+	input rstn,
+	
+	
+	//user input - TODO - choose if it's a register or input to accelerator
+	input start_eng,
+	
+	//input from control regs
+	input MReg,
+	
+	//input from engine
+	input eng_empty,
+	
+	//===========
+	//  outputs:
+	//===========
+	
+	//global outputs:
+	output eng_rstn,
+	
+	//output to input buffer
+	output cntrl_inbuff_rd_en,
+	
+	//output to output buffer
+	output cntrl_outbuff_wr_en,
+	
+	//output to bitmatrix memory
+	output cntrl_bm_mem_rd_en,
+	
+	//output to engine
+	output cntrl_eng_calc_en,
+	
+	//output to registers
+	output global_reg_wr_en
 
 
 );
@@ -146,17 +147,21 @@ always_comb begin
 	cntrl_outbuff_wr_en		=	1'b0;
 	cntrl_bm_mem_rd_en		=	1'b0;
 	global_reg_wr_en		=	1'b0;
+	eng_rstn				=	1'b1;
 //
 	
 	case(cur_st):
 
-	INIT_ST begin
+	INIT_ST:	
+	begin
 		global_reg_wr_en		=	1'b1;
+		eng_rstn				=	1'b0;
 	end
 
 	end
 
-	CALC_ST	begin
+	CALC_ST:	
+	begin
 		cntrl_inbuff_rd_en		=	1'b1;
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
@@ -164,7 +169,8 @@ always_comb begin
 	
 	end
 
-	FINISH_CALC_ST begin
+	FINISH_CALC_ST:	
+	begin
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
 	end
