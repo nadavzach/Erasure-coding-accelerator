@@ -1,6 +1,12 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\rtl",
+    "\\rtl\\EC_acceleraotor",
+    "\\rtl\\EC_acceleraotor\\engine",
+    "\\rtl\\templates",
+    "\\rtl\\test_bench"
   ],
+  "SelectedNode": "\\rtl\\EC_acceleraotor\\global_parameters.v",
   "PreviewInSolutionExplorer": false
 }
