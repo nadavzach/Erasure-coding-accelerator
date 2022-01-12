@@ -18,9 +18,9 @@
 //Notes:
 
 //TODO list:
-
-//	- connection between col counter and address - either M_MAX registers of BM_MEM_ADDR_W or to comb' calc it.
+//  - hard code bm_mem_col_addr_arr addresses
 //	- add logic for memory IF
+//  - add indication to eng and eng FSM that there are still columns to calc for this line of data 
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
@@ -78,8 +78,9 @@ logic bm_col_count_en;
 logic [M_MAX-1:0] bm_col_counter;
 logic [M_MAX-1:0] bm_col_counter_max_value;
 
-
+//bm memory
 logic [BM_COL_W-1:0] bm_coloum_data_out_reg;
+logic [BM_MEM_ADDR_W-1:0] bm_mem_col_addr_arr [0:M_MAX-1];
 
 //======================
 //  coloumns counter:
@@ -164,7 +165,8 @@ generate
 	end
 endgenerate
 
-// TODO - connection between col counter and address - either M_MAX registers of BM_MEM_ADDR_W or to comb' calc it.
+//TODO - hard code bm_mem_col_addr_arr addresses
+assign bm_cntl_bm_mem_rd_addr = bm_mem_col_addr_arr[bm_col_counter];
 
 endmodule
 
