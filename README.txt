@@ -4,4 +4,4 @@
 
 contains:
   -cpp Arch simulator, validated against jerasure functions
-  -verilog implementaion
+  -verilog implementation
