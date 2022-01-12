@@ -23,7 +23,7 @@
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
-module module_name #(
+module gen_mux #(
 
 //=================================
 //  user parameters 
@@ -52,8 +52,12 @@ module module_name #(
 
 );
 
-assign data_out = inputs_arr[sel];
+generate 
+	for(genvar i=0; i < INPUTS_NUM; i = i + 1) begin
 
+		
+
+	end//for
 endmodule
 
 

@@ -1,6 +1,5 @@
 // global parameters across the design:
 
-parameter BM_MULT_UNIT_NUM = 264,
 parameter K_MAX = 128,
 parameter K_MIN = 2,
 parameter M_MAX = 128,
@@ -19,7 +18,9 @@ parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W),
 
 //engine parameters
 
+parameter BM_MULT_UNIT_NUM = 256,
 parameter PCK_TREE_XOR_UNITS_NUM = BM_MULT_UNIT_NUM / K_MIN;
+parameter BMU_BM_MUX_SEL_W		 = $clog2(K_MAX);
 
 //output buffer parameters:
 
