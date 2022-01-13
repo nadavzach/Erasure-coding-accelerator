@@ -66,7 +66,7 @@ module engine_top #(
 //===========
 
 // to control
-	output data_used, //TODO - this signal indicates that the ata from bm and engine was used in a calc. the control use this to know when to count. find better name?
+	output data_used, 	
 	output eng_pl_empty,// indicates there is no valid calculated data in the engine that hav'nt been written to 
 
 // to outbuf mem

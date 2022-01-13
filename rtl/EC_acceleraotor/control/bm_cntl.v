@@ -20,7 +20,6 @@
 //TODO list:
 //  - hard code bm_mem_col_addr_arr addresses
 //	- add logic for memory IF
-//  - add indication to eng and eng FSM that there are still columns to calc for this line of data 
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
@@ -48,7 +47,7 @@ module bm_cntl #(
 	input eng_fsm_bm_cntl_rd_en,
 
 	//input from engine
-	input eng_bm_cntl_new_col_req,
+	input eng_bm_cntl_data_used,
 	//input from control regs:
 	input MReg,
 
@@ -111,28 +110,12 @@ always_ff @(posedge clk or negedge rstn) begin
 	end
 end
 
-//always_ff @(posedge clk or negedge rstn) begin
-//	if(~rstn) begin
-//		bm_col_counter_count	<=	1'b0;
-//	end else begin
-//		if(~eng_rstn) begin
-//			bm_col_counter_count	<=	1'b0;
-//		end else begin
-//			if(count_en)
-//				bm_col_counter_count	<=	1'b1;
-//			end else begin
-//				bm_col_counter_count	<=	1'b0;
-//			end
-//		end
-//	end
-//
-
 //============================
 //  bitmatrix memory control:
 //============================
 assign bm_cntl_bm_mem_rd_rq = eng_fsm_bm_cntl_rd_en
 					          &(
-					          eng_bm_cntl_new_col_req//engine used the data in the output reg and he'll be calc in the next clk also
+					          eng_bm_cntl_data_used//engine used the data in the output reg and he'll be calc in the next clk also
 					          ||
 					          ~bm_coloum_data_out_val//in calc mode but no data in output reg (no valid)
 					          );
