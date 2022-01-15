@@ -3,10 +3,12 @@
     "",
     "\\rtl",
     "\\rtl\\EC_acceleraotor",
+    "\\rtl\\EC_acceleraotor\\common",
+    "\\rtl\\EC_acceleraotor\\control",
     "\\rtl\\EC_acceleraotor\\engine",
     "\\rtl\\templates",
     "\\rtl\\test_bench"
   ],
-  "SelectedNode": "\\rtl\\EC_acceleraotor\\global_parameters.v",
+  "SelectedNode": "\\rtl\\EC_acceleraotor\\control\\bm_cntl.v",
   "PreviewInSolutionExplorer": false
 }
