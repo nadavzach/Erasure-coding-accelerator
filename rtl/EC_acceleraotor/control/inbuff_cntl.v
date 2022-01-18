@@ -6,7 +6,6 @@
 // ===========
 // this module interacts with:
 //		- the input buffer memory. the mem holds the incoming data to encode. it should read new line every M clk cycles
-//		- the two buffer regs that holds the sampled data in a FIFO manner (with the mem it self) so they will cover the SRAM reading delay for M < 3
 //
 //  
 //======================================================================================================

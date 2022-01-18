@@ -46,11 +46,11 @@ module engine_top #(
 
 //input from inbuff
 
-	input [PACKET_LENGTH-1:0] inbuf_eng_din_reg [0:W-1] [0:BM_MULT_UNIT_NUM-1],
+	input [PACKET_LENGTH-1:0] inbuf_eng_din_reg [0:BM_MULT_UNIT_NUM-1][0:W-1] ,
 	input inbuf_eng_din_reg_val,
 
 //input from control 
-	input [W-1:0] cntl_eng_bm_col_din_reg [0:W-1] [0:K_MAX-1],
+	input [W-1:0] cntl_eng_bm_col_din_reg [0:K_MAX-1][0:W-1] ,
 	input cntl_eng_bm_col_din_reg_val,
 	input cntrl_eng_calc_en,
 	input global_reg_wr_en,
@@ -71,7 +71,7 @@ module engine_top #(
 
 // to outbuf mem
 
-	output [PACKET_LENGTH-1:0] eng_outbuf_dout_reg [0:W-1] [0:PCK_TREE_XOR_UNITS_NUM-1],
+	output [PACKET_LENGTH-1:0] eng_outbuf_dout_reg [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1] ,
 	output eng_outbuf_wr_req
 );
 
@@ -83,8 +83,8 @@ module engine_top #(
 
 //logic [PACKET_LENGTH-1:0] eng_pl_stage_0_din_reg [0:W-1] [0:K_MAX-1];
 //logic [W-1:0] eng_pl_stage_0_bd_col_reg  [0:W-1] [0:K_MAX-1];
-logic [PACKET_LENGTH-1:0] eng_pl_reg_1 [0:W-1] [0:BM_MULT_UNIT_NUM-1];
-logic [PACKET_LENGTH-1:0] eng_pl_reg_2 [0:W-1] [0:PCK_TREE_XOR_UNITS_NUM-1];
+logic [PACKET_LENGTH-1:0] eng_pl_reg_1 [0:BM_MULT_UNIT_NUM-1] [0:W-1];
+logic [PACKET_LENGTH-1:0] eng_pl_reg_2 [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1] ;
 
 logic eng_pl_reg_val_0;
 logic eng_pl_reg_val_1;
@@ -93,16 +93,16 @@ logic eng_pl_reg_val_2;
 
 //stage 1 bm mult:
 
-logic [W-1:0] bmu_bm_mux_arr_o [W-1:0] [0:BM_MULT_UNIT_NUM-1];
+logic [W-1:0] bmu_bm_mux_arr_o [0:BM_MULT_UNIT_NUM-1][W-1:0] ;
 logic [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_arr [0:BM_MULT_UNIT_NUM-1];
 
 
 //stage 2 AND mask + xor
 
-logic [PACKET_LENGTH-1:0] and_mask_d_in_arr		[0:W-1] [0:K_MAX-1] [0:PCK_TREE_XOR_UNITS_NUM-1];
-logic [PACKET_LENGTH-1:0] and_mask_mask_reg_arr [0:W-1] [0:K_MAX-1] [0:PCK_TREE_XOR_UNITS_NUM-1];
-logic [PACKET_LENGTH-1:0] and_mask_d_out_arr	[0:W-1] [0:K_MAX-1] [0:PCK_TREE_XOR_UNITS_NUM-1];
-logic [PACKET_LENGTH-1:0] tree_xor_d_out_arr	[0:W-1] [0:PCK_TREE_XOR_UNITS_NUM-1];
+logic [PACKET_LENGTH-1:0] and_mask_d_in_arr		[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
+logic [PACKET_LENGTH-1:0] and_mask_mask_reg_arr [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
+logic [PACKET_LENGTH-1:0] and_mask_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
+logic [PACKET_LENGTH-1:0] tree_xor_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1] ;
 
 //==================================
 // general control : 
@@ -148,13 +148,13 @@ generate
 		for(genvar stg_1_data_word_bit_idx = 0; stg_1_data_word_bit_idx < W; stg_1_data_word_bit_idx = stg_1_data_word_bit_idx + 1) begin
 			always_ff @(posedge clk or negedge rstn) begin
 				if(~rstn) begin
-					eng_pl_reg_1[stg_1_data_word_bit_idx][stg_1_data_bmu_idx]			<=	{W{1'b0}};
+					eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]			<=	{W{1'b0}};
 				end else begin
 					if(~eng_rstn) begin
-						eng_pl_reg_1[stg_1_data_word_bit_idx][stg_1_data_bmu_idx]		<=	{W{1'b0}};
+						eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]		<=	{W{1'b0}};
 					end else begin
 						if(cntrl_eng_calc_en & eng_pl_reg_val_0) begin
-							eng_pl_reg_1[stg_1_data_word_bit_idx][stg_1_data_bmu_idx]	<=	bmu_bm_mux_arr_o[stg_1_data_word_bit_idx][stg_1_data_bmu_idx];
+							eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]	<=	bmu_bm_mux_arr_o[stg_1_data_bmu_idx][stg_1_data_word_bit_idx];
 						end
 					end
 				end
@@ -185,13 +185,13 @@ generate
 		for(genvar stg_2_data_word_bit_idx = 0; stg_2_data_word_bit_idx < BM_MULT_UNIT_NUM; stg_2_data_word_bit_idx = stg_2_data_word_bit_idx + 1) begin
 			always_ff @(posedge clk or negedge rstn) begin
 				if(~rstn) begin
-					eng_pl_reg_2[stg_2_data_word_bit_idx][stg_2_tx_unit_idx]			<=	{W{1'b0}};
+					eng_pl_reg_2[stg_2_tx_unit_idx][stg_2_data_word_bit_idx]			<=	{W{1'b0}};
 				end else begin
 					if(~eng_rstn) begin
-						eng_pl_reg_2[stg_2_data_word_bit_idx][stg_2_tx_unit_idx]		<=	{W{1'b0}};
+						eng_pl_reg_2[stg_2_tx_unit_idx][stg_2_data_word_bit_idx]		<=	{W{1'b0}};
 					end else begin
 						if(cntrl_eng_calc_en & eng_pl_reg_val_1) begin
-							eng_pl_reg_2[stg_2_data_word_bit_idx][stg_2_tx_unit_idx]	<=	tree_xor_d_out_arr[stg_2_data_word_bit_idx][stg_2_tx_unit_idx];
+							eng_pl_reg_2[stg_2_tx_unit_idx][stg_2_data_word_bit_idx]	<=	tree_xor_d_out_arr[stg_2_tx_unit_idx][stg_2_data_word_bit_idx];
 						end
 					end
 				end
@@ -252,15 +252,16 @@ generate
 endgenerate
 
 // assigning stage 1 output to the different mask + xor units:
-genvar  mask_unit_idx,k_idx,w_idx;
+genvar  mask_unit_idx,k_idx,w2_idx;
 generate
 	for( mask_unit_idx = 0; mask_unit_idx < PCK_TREE_XOR_UNITS_NUM; mask_unit_idx = mask_unit_idx + 1) begin
 		for( k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
-			if(K_MIN*mask_unit_idx + k_idx < BM_MULT_UNIT_NUM) begin
-				and_mask_d_in_arr[k_idx][mask_unit_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx];
+			for ( w1_idx = 0;w1_idx < W; w1_idx = w1_idx + 1 ) begin
+				if(K_MIN*mask_unit_idx + k_idx < BM_MULT_UNIT_NUM) begin
+					and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx][w1_idx];
 			end else begin
-				for ( w_idx = 0;w_idx < W; w_idx = w_idx + 1 ) begin
-					and_mask_d_in_arr[w_idx][k_idx][mask_unit_idx] = {W{1'b0}};
+				for ( w2_idx = 0;w2_idx < W; w2_idx = w2_idx + 1 ) begin
+					and_mask_d_in_arr[[mask_unit_idx][w2_idx][k_idx] = {W{1'b0}};
 				end
 			end
 		end
