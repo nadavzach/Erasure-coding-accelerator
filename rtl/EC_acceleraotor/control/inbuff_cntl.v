@@ -19,7 +19,7 @@
 //TODO list:
 
 // make sure that the data read to the buffer regs will not be overwritten, so rst(eng or main) will not cause lost data.
-
+// check the read req from the counter, make sure its aliging 
 //======================================================================================================
 ////######################################### MODULE ####################################################
 module bm_cntl #(
@@ -79,6 +79,8 @@ module bm_cntl #(
 logic compute_cyc_count_en;
 logic [M_MAX-1:0] compute_cyc_counter;
 logic [M_MAX-1:0] compute_cyc_counter_max_value;
+logic new_data_req;
+logic compute_cyc_count_en;
 
 //bm memory
 logic [PACKET_LENGTH-1:0] inbuf_mem_dout_reg_0 [0:W-1] [0:BM_MULT_UNIT_NUM-1];
@@ -94,8 +96,10 @@ logic inbuf_mem_dout_reg_val_1;
 // countes the M compute cycles for each data line, to indicate when there's a need for a new data line/ the engine can be emptied
 assign compute_cyc_count_en	=  eng_inbuf_cntl_data_used;
 
-assign compute_cyc_counter_max_value = MReg-{{(M_MAX-1){1'b0}},1'b1}
+assign new_data_req =  ~|(compute_cyc_counter ^ compute_cyc_counter_req_value);//comparator
 
+
+// counter logic
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
 		compute_cyc_counter	<=	{M_MAX{1'b0}};
@@ -114,42 +118,78 @@ always_ff @(posedge clk or negedge rstn) begin
 	end
 end
 
+
+//setting the the registers used to compare against the counter:
+always_ff @(posedge clk or negedge rstn) begin
+	if(~rstn) begin
+		compute_cyc_counter_req_value	<=	{M_MAX{1'b0}};
+		compute_cyc_counter_max_value	<=	{M_MAX{1'b0}};
+
+		end else begin
+			if(~eng_rstn) begin
+				compute_cyc_counter_req_value	<=	{M_MAX{1'b0}};
+				compute_cyc_counter_max_value	<=	{M_MAX{1'b0}};
+			end else begin
+				if(cntrl_inbuff_rd_en) begin
+					compute_cyc_counter_req_value	<=  (MReg-{{(M_MAX-2){1'b0}},1'b1,1'b0});	
+					compute_cyc_counter_max_value	<=	(MReg-{{(M_MAX-1){1'b0}},1'b1});		
+
+			end
+		end
+	end
+end
+
+
 //============================
-//  bitmatrix memory control:
+//  input buffer memory control:
 //============================
-assign bm_cntl_bm_mem_rd_rq = eng_fsm_bm_cntl_rd_en
+assign bm_cntl_bm_mem_rd_rq = cntrl_inbuff_rd_en
 					          &(
-					          eng_bm_cntl_data_used//engine used the data in the output reg and he'll be calc in the next clk also
-					          ||
-					          ~bm_coloum_data_out_val//in calc mode but no data in output reg (no valid)
+					          new_data_req// TODO add some logic so it will not read while no operation in the engine - maybe smg with eng_inbuf_cntl_data_used
+							  ||
+					          ~inbuf_eng_dout_reg_val//in calc mode but no data in output reg (no valid)
 					          );
 
 //output register + val sync block					   
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
-		bm_coloum_data_out_reg	<=	{BM_COL_W{1'b0}};
-		bm_coloum_data_out_val	<=	1'b0;
+		inbuf_mem_dout_reg_val_0	<=	1'b0;
 	end else begin
 		if(~eng_rstn) begin
-			bm_coloum_data_out_reg	<=	{BM_COL_W{1'b0}};
-			bm_coloum_data_out_val	<=	1'b0;
+			inbuf_mem_dout_reg_val_0	<=	1'b0;
 		end else begin
-			if(bm_mem_bm_cntl_rd_data_val) begin
-				bm_coloum_data_out_reg	<=	bm_mem_bm_cntl_rd_data;
-				bm_coloum_data_out_val	<=	1'b1;
+			if(inbuf_mem_rd_data_val) begin
+				inbuf_mem_dout_reg_val_0	<=	1'b1;
 			end
 		end
 	end
 end
+
 
 //assigning the memory data out  to the data reg array
 genvar i,j;
 generate 
 	for(i=0;i<BM_MULT_UNIT_NUM;i=i+1) begin
 		for(j=0;j<W;j=j+1) begin
-			inbuf_mem_dout_reg_0[j][i] = inbuf_mem_rd_data[i*j*W +: W];
+
+//output register + val sync block					   
+			always_ff @(posedge clk or negedge rstn) begin
+				if(~rstn) begin
+					inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
+				end else begin
+					if(~eng_rstn) begin
+						inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
+					end else begin
+						if(bm_mem_bm_cntl_rd_data_val) begin
+							inbuf_mem_dout_reg_0[j][i]	<=	inbuf_mem_rd_data[i*j*W +: W];
+						end
+					end
+				end
+			end
 		end
 	end
+
+
 endgenerate
 
 

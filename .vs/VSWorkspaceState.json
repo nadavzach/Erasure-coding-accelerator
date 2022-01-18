@@ -9,6 +9,6 @@
     "\\rtl\\templates",
     "\\rtl\\test_bench"
   ],
-  "SelectedNode": "\\rtl\\EC_acceleraotor\\control\\bm_cntl.v",
+  "SelectedNode": "\\rtl\\EC_acceleraotor\\control\\inbuff_cntl.v",
   "PreviewInSolutionExplorer": false
 }
