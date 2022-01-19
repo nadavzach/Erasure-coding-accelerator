@@ -15,6 +15,7 @@
 //  - bm_cntl_i
 //  - engine_fsm_i
 //  - control_reg_top_i
+//  - inbuff_cntl_i
 
 
 //Notes:
@@ -91,7 +92,12 @@ logic eng_fsm_bm_cntl_rd_en;
 //==============================
 assign eng_rstn_o = eng_rstn;
 
-// bitmatrix control instantination:
+
+//-------------------------------------
+// bitmatrix control:
+//--------------------------------------
+
+
 bm_cntl bitmatrix_control_i(
 
 //  inputs:
@@ -117,7 +123,9 @@ bm_cntl bitmatrix_control_i(
 
 );
 
-
+//------------------------
+// engine fsm
+//------------------------
 
 engine_fsm engine_fsm_i(
 //  inputs:
@@ -146,6 +154,45 @@ engine_fsm engine_fsm_i(
 ,.global_reg_wr_en(global_reg_wr_en)
 
 )
+
+//----------------------------
+//	input buffer control: 
+//----------------------------
+
+
+inbuff_cntl inbuff_cntl_i (
+	.clk()
+	.rstn(rstn)
+	,.eng_rstn(eng_rstn)
+
+	//input from controller
+	,.cntrl_inbuff_rd_en(cntrl_inbuff_rd_en)
+	//input from engine
+,.input eng_inbuf_cntl_data_used(eng_inbuf_cntl_data_used)
+	//input from control regs:
+,.input MReg(MReg)
+
+//===========
+//  outputs:
+//===========
+	output [PACKET_LENGTH-1:0] inbuf_eng_dout_reg [0:W-1] [0:BM_MULT_UNIT_NUM-1],
+	,.inbuf_eng_dout_reg_val(inbuf_eng_dout_reg_val)
+
+//====================
+//   mem I/F:
+//====================
+
+	input  [INBUF_MEM_DATA_W-1:0]	inbuf_mem_rd_data,
+	,.inbuf_mem_rd_data_val(inbuf_mem_rd_data_val)
+
+	output [INBUF_MEM_DATA_W-1:0]	inbuf_mem_wr_data,
+	,.inbuf_mem_rd_req(inbuf_mem_rd_req)
+	,.inbuf_mem_wr_req(inbuf_mem_wr_req)
+	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_rd_addr,
+	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_wr_addr
+
+);
+
 
 endmodule
 
