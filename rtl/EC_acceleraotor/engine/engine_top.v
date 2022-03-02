@@ -43,9 +43,12 @@ module engine_top #(
 //===========
 //  inputs:
 //===========
+	input clk,
+	input rstn,
+	input eng_rstn,
 
 //input from inbuff
-
+	
 	input [PACKET_LENGTH-1:0] inbuf_eng_din_reg [0:BM_MULT_UNIT_NUM-1][0:W-1] ,
 	input inbuf_eng_din_reg_val,
 
@@ -67,7 +70,7 @@ module engine_top #(
 
 // to control
 	output data_used, 	
-	output eng_pl_empty,// indicates there is no valid calculated data in the engine that hav'nt been written to 
+	output eng_pl_empty,// indicates there is no valid calculated data in the engine that hav'nt been written to outbuf
 
 // to outbuf mem
 
@@ -153,8 +156,8 @@ generate
 					if(~eng_rstn) begin
 						eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]		<=	{W{1'b0}};
 					end else begin
-						if(cntrl_eng_calc_en & eng_pl_reg_val_0) begin
-							eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]	<=	bmu_bm_mux_arr_o[stg_1_data_bmu_idx][stg_1_data_word_bit_idx];
+						if( eng_pl_reg_val_0) begin
+							eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]	<=	bm_mult_d_out_arr[stg_1_data_bmu_idx][stg_1_data_word_bit_idx];
 						end
 					end
 				end
@@ -218,7 +221,7 @@ generate
 		    ,.mult_product	( bm_mult_d_out_arr[bmu_inst_idx]	)
 		);
 
-		bmu_bm_mux_arr_o[bmu_inst_idx] = cntl_eng_bm_col_din_reg[bmu_bm_mux_sel_reg_arr[bmu_inst_idx]];// TODO - ask bnya if this bus mux is ok or need more implicit coding
+		assign bmu_bm_mux_arr_o[bmu_inst_idx] = cntl_eng_bm_col_din_reg[bmu_bm_mux_sel_reg_arr[bmu_inst_idx]];// TODO - ask bnya if this bus mux is ok or need more implicit coding
 
 	end//for - bm_mult_idx
 endgenerate

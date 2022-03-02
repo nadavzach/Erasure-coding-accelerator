@@ -7,12 +7,10 @@ parameter M_MIN = 2,
 parameter W = 4,
 parameter PACKET_LENGTH =  2,
 
-
-
 //bitmatrix memory parameters:
 parameter BM_MEM_DEPTH = M_MAX,
 parameter BM_COL_W = W*W*K_MAX,
-parameter BM_MEM_W = BM_COLOUMN_W,
+parameter BM_MEM_W = BM_COL_W,
 parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W),
 
 
@@ -25,12 +23,17 @@ parameter BMU_BM_MUX_SEL_W		 = $clog2(K_MAX);
 
 //input buffer parameters:
 
-parameter INBUF_MEM_WIDTH  = ,
+parameter INBUF_MEM_WIDTH  = BM_MULT_UNIT_NUM * W *PACKET_LENGTH ,
 parameter INBUF_MEM_DEPTH  = 100,//TODO - set
-parameter INBUF_MEM_ADDR_W = $clog2(OUTBUF_MEM_DEPTH);
+parameter INBUF_MEM_ADDR_W = $clog2(INBUF_MEM_DEPTH);
 
 //output buffer parameters:
 
-parameter OUTBUF_MEM_WIDTH  = PACKET_LENGTH*W*PCK_TREE_XOR_UNITS_NUM,
+parameter OUTBUF_MEM_WIDTH  = PACKET_LENGTH * W * PCK_TREE_XOR_UNITS_NUM,
 parameter OUTBUF_MEM_DEPTH  = 100,//TODO - set
-parameter OUTBUF_MEM_ADDR_W = $clog2(OUTBUF_MEM_DEPTH);
+parameter OUTBUF_MEM_ADDR_W = $clog2(OUTBUF_MEM_DEPTH),
+
+// global regs:
+
+parameter REGS_ADDR_W = 16,
+parameter COMMON_REG_W = 16

@@ -47,9 +47,13 @@ module control_top #(
 	
 	//input from engine
 	input eng_empty,
-	input eng_top_bm_cntl_new_col_req,
-	input eng_inbuf_cntl_data_used,
+	input eng_cntl_data_used,
 	
+	//input from registers:
+
+	input EcaEnReg,
+	input MReg,
+
 	//===========
 	//  outputs:
 	//===========
@@ -119,7 +123,7 @@ bm_cntl bitmatrix_control_i(
 //input from controller
 ,.eng_fsm_bm_cntl_rd_en(eng_fsm_bm_cntl_rd_en)
 //input from engine
-,.eng_bm_cntl_new_col_req(eng_top_bm_cntl_new_col_req)
+,.eng_bm_cntl_data_used(eng_cntl_data_used)
 //input from control regs:
 ,.MReg(MReg)
 
@@ -180,7 +184,7 @@ inbuff_cntl inbuff_cntl_i (
 	//input from controller
 	,.cntrl_inbuff_rd_en(cntrl_inbuff_rd_en)
 	//input from engine
-	,.eng_inbuf_cntl_data_used(eng_inbuf_cntl_data_used)
+	,.eng_inbuf_cntl_data_used(eng_cntl_data_used)
 	//input from control regs:
 	,.MReg(MReg)
 
