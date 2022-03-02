@@ -32,23 +32,34 @@ module engine_top #(
 //  user parameters 
 //=================================
 
-`include "global_parameters.sv"
-//=================================
-//  local parameters (DON'T CHANGE)
-//=================================
+// global parameters across the design:
 
+parameter K_MAX = 128,
+		  K_MIN = 2,
+		  M_MAX = 128,
+		  M_MIN = 2,
+		  W = 4,
+		  PACKET_LENGTH =  2,
 
+//engine parameters
 
+		  BM_MULT_UNIT_NUM = 256,
+		  PCK_TREE_XOR_UNITS_NUM = BM_MULT_UNIT_NUM / K_MIN,
+		  BMU_BM_MUX_SEL_W		 = $clog2(K_MAX)
+		  
 )(
 //===========
 //  inputs:
 //===========
+
+//general:
+	
 	input clk,
 	input rstn,
 	input eng_rstn,
-
-//input from inbuff
 	
+//input from inbuff
+
 	input [PACKET_LENGTH-1:0] inbuf_eng_din_reg [0:BM_MULT_UNIT_NUM-1][0:W-1] ,
 	input inbuf_eng_din_reg_val,
 
@@ -70,7 +81,7 @@ module engine_top #(
 
 // to control
 	output data_used, 	
-	output eng_pl_empty,// indicates there is no valid calculated data in the engine that hav'nt been written to outbuf
+	output eng_pl_empty,// indicates there is no valid calculated data in the engine that hav'nt been written to 
 
 // to outbuf mem
 
@@ -98,6 +109,7 @@ logic eng_pl_reg_val_2;
 
 logic [W-1:0] bmu_bm_mux_arr_o [0:BM_MULT_UNIT_NUM-1][W-1:0] ;
 logic [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_arr [0:BM_MULT_UNIT_NUM-1];
+logic [PACKET_LENGTH-1:0] bm_mult_d_out_arr [0:BM_MULT_UNIT_NUM-1] [0:W-1];
 
 
 //stage 2 AND mask + xor
@@ -117,7 +129,7 @@ assign eng_outbuf_wr_req	= eng_pl_reg_val_2 & cntrl_eng_calc_en & ~outbuf_eng_fu
 
 //cntl
 assign data_used = cntrl_eng_calc_en & eng_pl_reg_val_0;
-assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2)
+assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2);
 
 //==================================
 // pipe line logic : 
@@ -126,8 +138,6 @@ assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2)
 //stage_0 comb
 
 assign eng_pl_reg_val_0 = inbuf_eng_din_reg_val & cntl_eng_bm_col_din_reg_val & cntrl_eng_calc_en;
-
-
 
 //stage_1
 
@@ -144,6 +154,7 @@ always_ff @(posedge clk or negedge rstn) begin
 			end
 		end
 	end
+end
 
 //data logic
 generate
@@ -156,12 +167,15 @@ generate
 					if(~eng_rstn) begin
 						eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]		<=	{W{1'b0}};
 					end else begin
-						if( eng_pl_reg_val_0) begin
+						if(cntrl_eng_calc_en & eng_pl_reg_val_0) begin
 							eng_pl_reg_1[stg_1_data_bmu_idx][stg_1_data_word_bit_idx]	<=	bm_mult_d_out_arr[stg_1_data_bmu_idx][stg_1_data_word_bit_idx];
 						end
 					end
 				end
 			end
+		end
+	end
+	
 endgenerate
 
 
@@ -181,11 +195,12 @@ always_ff @(posedge clk or negedge rstn) begin
 			end
 		end
 	end
+end
 
 //data logic
 generate
-	for(genvar stg_2_tx_unit_idx = 0; stg_2_tx_unit_idx < BM_MULT_UNIT_NUM; stg_2_tx_unit_idx = stg_2_tx_unit_idx + 1) begin
-		for(genvar stg_2_data_word_bit_idx = 0; stg_2_data_word_bit_idx < BM_MULT_UNIT_NUM; stg_2_data_word_bit_idx = stg_2_data_word_bit_idx + 1) begin
+	for(genvar stg_2_tx_unit_idx = 0; stg_2_tx_unit_idx < PCK_TREE_XOR_UNITS_NUM; stg_2_tx_unit_idx = stg_2_tx_unit_idx + 1) begin
+		for(genvar stg_2_data_word_bit_idx = 0; stg_2_data_word_bit_idx < W; stg_2_data_word_bit_idx = stg_2_data_word_bit_idx + 1) begin
 			always_ff @(posedge clk or negedge rstn) begin
 				if(~rstn) begin
 					eng_pl_reg_2[stg_2_tx_unit_idx][stg_2_data_word_bit_idx]			<=	{W{1'b0}};
@@ -199,6 +214,8 @@ generate
 					end
 				end
 			end
+		end
+	end
 endgenerate
 
 
@@ -211,8 +228,11 @@ endgenerate
 genvar bmu_inst_idx;
 generate
 	for(bmu_inst_idx = 0;bmu_inst_idx < BM_MULT_UNIT_NUM;bmu_inst_idx = bmu_inst_idx + 1) begin
-
-		bm_mult_unit bm_mult_unit_i(
+			
+		bm_mult_unit #(
+		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+		)bm_mult_unit_i(
+		
 			//  inputs:
 			.bitmatrix_cols	( bmu_bm_mux_arr_o[bmu_inst_idx]	) 
 			,.data_packet	( inbuf_eng_din_reg[bmu_inst_idx]	)
@@ -232,7 +252,10 @@ genvar tree_xor_inst_idx;
 generate
 	for(tree_xor_inst_idx = 0;tree_xor_inst_idx < PCK_TREE_XOR_UNITS_NUM;tree_xor_inst_idx = tree_xor_inst_idx + 1) begin
 
-		mask_unit mask_unit_i(
+		mask_unit #(
+		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+		)mask_unit_i(
+		
 			//  inputs:
 			.packets		( and_mask_d_in_arr[tree_xor_inst_idx]		) 
 			,.mask			( and_mask_mask_reg_arr[tree_xor_inst_idx]	)
@@ -242,7 +265,10 @@ generate
 		);
 
 
-		dyn_xor_unit dyn_xor_unit_i(
+		packet_tree_xor #(
+		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+		)packet_tree_i(
+		
 			//  inputs:
 			.packets		( and_mask_d_out_arr[tree_xor_inst_idx]		) 
 			
@@ -250,21 +276,19 @@ generate
 		    ,.xor_product	( tree_xor_d_out_arr[tree_xor_inst_idx]		)
 		);
 
-
 	end//for  
 endgenerate
 
 // assigning stage 1 output to the different mask + xor units:
-genvar  mask_unit_idx,k_idx,w2_idx;
+genvar  mask_unit_idx,k_idx,w1_idx;
 generate
 	for( mask_unit_idx = 0; mask_unit_idx < PCK_TREE_XOR_UNITS_NUM; mask_unit_idx = mask_unit_idx + 1) begin
 		for( k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
-			for ( w1_idx = 0;w1_idx < W; w1_idx = w1_idx + 1 ) begin
+			for ( w1_idx = 0; w1_idx < W; w1_idx = w1_idx + 1 ) begin
 				if(K_MIN*mask_unit_idx + k_idx < BM_MULT_UNIT_NUM) begin
-					and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx][w1_idx];
-			end else begin
-				for ( w2_idx = 0;w2_idx < W; w2_idx = w2_idx + 1 ) begin
-					and_mask_d_in_arr[[mask_unit_idx][w2_idx][k_idx] = {W{1'b0}};
+					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx][w1_idx];
+				end else begin
+					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = {W{1'b0}};
 				end
 			end
 		end
@@ -272,12 +296,4 @@ generate
 endgenerate
 
 
-
-
-
 endmodule
-
-
-
-
-
