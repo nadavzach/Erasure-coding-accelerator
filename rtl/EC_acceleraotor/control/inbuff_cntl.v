@@ -18,7 +18,7 @@
 //TODO list:
 
 // make sure that the data read to the buffer regs will not be overwritten, so rst(eng or main) will not cause lost data.
-// check the read req from the counter, make sure its aliging 
+// check the read req from the counter, make sure its aligning 
 //======================================================================================================
 ////######################################### MODULE ####################################################
 module inbuff_cntl #(
@@ -52,7 +52,6 @@ module inbuff_cntl #(
 //===========
 //  outputs:
 //===========
-	output [PACKET_LENGTH-1:0] inbuf_eng_dout_reg [0:W-1] [0:BM_MULT_UNIT_NUM-1],
 	output inbuf_eng_dout_reg_val,
 
 //====================

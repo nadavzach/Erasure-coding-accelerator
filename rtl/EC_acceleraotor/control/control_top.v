@@ -12,7 +12,7 @@
 //======================================================================================================
 
 // Sub Modules:
-//  - bm_cntl_i
+//  - bitmatrix_control_i
 //  - engine_fsm_i
 //  - control_reg_top_i
 //  - inbuff_cntl_i
@@ -48,7 +48,7 @@ module control_top #(
 	//input from engine
 	input eng_empty,
 	input eng_top_bm_cntl_new_col_req,
-	
+	input eng_inbuf_cntl_data_used,
 	
 	//===========
 	//  outputs:
@@ -87,6 +87,18 @@ module control_top #(
 //======================
 logic eng_rstn;
 logic eng_fsm_bm_cntl_rd_en;
+
+
+// inbuf memory IF signals:
+logic inbuf_mem_rd_data_val;
+logic inbuf_mem_rd_req;
+logic inbuf_mem_wr_req;
+logic [INBUF_MEM_DATA_W-1:0]  inbuf_mem_rd_data; 
+logic [INBUF_MEM_DATA_W-1:0]  inbuf_mem_wr_data; 
+logic [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_rd_addr;
+logic [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_wr_addr;
+
+
 //==============================
 //  submodules instantiations:
 //==============================
@@ -115,7 +127,7 @@ bm_cntl bitmatrix_control_i(
 ,.bm_col_data_out(bm_col_data_out)
 ,.bm_coloum_data_out_val(bm_coloum_data_out_val)
 
-//  bitmatrix mem I/F:
+//  bitmatrix mem I/F: 
 ,.bm_mem_bm_cntl_rd_data(bm_mem_bm_cntl_rd_data)
 ,.bm_mem_bm_cntl_rd_data_val(bm_mem_bm_cntl_rd_data_val)
 ,.bm_cntl_bm_mem_rd_rq(bm_cntl_bm_mem_rd_rq)
@@ -161,39 +173,38 @@ engine_fsm engine_fsm_i(
 
 
 inbuff_cntl inbuff_cntl_i (
-	.clk()
-	.rstn(rstn)
+	.clk(clk)
+	,.rstn(rstn)
 	,.eng_rstn(eng_rstn)
 
 	//input from controller
 	,.cntrl_inbuff_rd_en(cntrl_inbuff_rd_en)
 	//input from engine
-,.input eng_inbuf_cntl_data_used(eng_inbuf_cntl_data_used)
+	,.eng_inbuf_cntl_data_used(eng_inbuf_cntl_data_used)
 	//input from control regs:
-,.input MReg(MReg)
+	,.MReg(MReg)
 
 //===========
 //  outputs:
 //===========
-	output [PACKET_LENGTH-1:0] inbuf_eng_dout_reg [0:W-1] [0:BM_MULT_UNIT_NUM-1],
 	,.inbuf_eng_dout_reg_val(inbuf_eng_dout_reg_val)
 
 //====================
 //   mem I/F:
 //====================
 
-	input  [INBUF_MEM_DATA_W-1:0]	inbuf_mem_rd_data,
+	,.inbuf_mem_rd_data(inbuf_mem_rd_data)
 	,.inbuf_mem_rd_data_val(inbuf_mem_rd_data_val)
 
-	output [INBUF_MEM_DATA_W-1:0]	inbuf_mem_wr_data,
+	,.inbuf_mem_wr_data(inbuf_mem_wr_data)
 	,.inbuf_mem_rd_req(inbuf_mem_rd_req)
 	,.inbuf_mem_wr_req(inbuf_mem_wr_req)
-	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_rd_addr,
-	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_wr_addr
+	inbuf_mem_rd_addr,
+	inbuf_mem_wr_addr
 
 );
 
-
+	
 endmodule
 
 

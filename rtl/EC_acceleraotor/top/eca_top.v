@@ -1,11 +1,10 @@
 //=====================================================================================================
 //
-// Module: sram_fifo
+// Module: eca (erasure coding accelerator) top module
 //
 // Description
 // ===========
-// fifo with sram as memory.
-//
+// this module is the top module of the eca
 // 
 // 
 //
@@ -13,25 +12,27 @@
 //======================================================================================================
 
 // Sub Modules:
-//  - sram_wrapper_i
+//  - control_top_i
+//  - engine_top_i
+//	- inbuf_top_i
+//	- outbuf_top_i
+//	- bitmatrix_mem_i
+//	- regs_top_i
+
 
 
 //Notes:
 
 //TODO list:
-// - set guide line to read and write together + pushback
-// - TODO everything - currently just an IF
+
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
-module sram_fifo #(
+module eca_top #(
 
 //=================================
 //  user parameters 
 //=================================
-	parameter SRAM_WRAP_WIDTH = 32,//defines the 2 ports combined width, have to be a complete multp of 2
-	parameter SRAM_WRAP_DEPTH = 100 //num of sramwidth rows
-
 
 
 //=================================
@@ -41,33 +42,18 @@ module sram_fifo #(
 
 
 )(
-//===========
-//  inputs:
-//===========
 
-input clk,
-input rst_n,
+//registers IF:
 
-input wr_req,
-input rd_req,
+input regs_wr_req;
+input regs_rd_req;
+input  [COMMON_REG_W-1:0] regs_wr_data;
+output [COMMON_REG_W-1:0] regs_rd_data;
+output regs_rd_data_val;
 
-input mem_en,
-input [SRAM_WRAP_WIDTH-1:0] wr_data_in,
-
-
-
-//===========
-//  outputs:
-//===========
-
-output rd_data_val,
-output [SRAM_WRAP_WIDTH-1:0] rd_data,
-output wr_ack,
-
-//status:
-
-output full,
-output empty
+//input buffer IF:
+input inbuf_wr_req;
+input [inbuf_wr_addr;
 
 );
 
