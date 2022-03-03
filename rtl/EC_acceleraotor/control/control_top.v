@@ -44,6 +44,7 @@ module control_top #(
 	//===========
 	input clk,
 	input rstn,
+	input engine_en,
 	
 	//input from engine
 	input eng_empty,
@@ -147,8 +148,8 @@ engine_fsm engine_fsm_i(
 //  inputs:
 ,.clk(clk)
 ,.rstn(rstn)
-//user input - TODO - choose if it's a register or input to accelerator
-,.start_eng(start_eng)
+//user input 
+,.start_eng(engine_en)
 //input from control regs
 ,.MReg(MReg)
 //input from engine

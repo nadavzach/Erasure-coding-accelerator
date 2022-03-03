@@ -95,7 +95,7 @@ logic [INT_MEM_ADDR_W-1:0] A2;
 assign A1 = {address,1'b0};
 assign A2 = {address,1'b1};
 
-assign rd_data = {O1,O2}
+assign rd_data = {O1,O2};
 
 assign I1 = wr_data_in[INT_MEM_W-1:0];
 assign I2 = wr_data_in[2*INT_MEM_W-1:INT_MEM_W];
