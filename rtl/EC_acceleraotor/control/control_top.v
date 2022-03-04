@@ -81,10 +81,12 @@ module control_top #(
 	input  bm_mem_bm_cntl_rd_data_val,
 
 	output bm_cntl_bm_mem_rd_rq,
-	output [BM_MEM_ADDR_W-1:0] bm_cntl_bm_mem_rd_addr
-
-
-
+	output [BM_MEM_ADDR_W-1:0] bm_cntl_bm_mem_rd_addr,
+	
+	// input buffer fifo rd IF
+	output cntl_inbuf_fifo_rd_rq,
+	output cntl_inbuf_fifo_mem_en,
+	input  inbuf_fifo_cntl_empty
 );
 
 //======================
@@ -189,23 +191,13 @@ inbuff_cntl inbuff_cntl_i (
 	//input from control regs:
 	,.MReg(MReg)
 
-//===========
-//  outputs:
-//===========
-	,.inbuf_eng_dout_reg_val(inbuf_eng_dout_reg_val)
-
 //====================
-//   mem I/F:
+//  sram FIFO I/F:
 //====================
 
-	,.inbuf_mem_rd_data(inbuf_mem_rd_data)
-	,.inbuf_mem_rd_data_val(inbuf_mem_rd_data_val)
-
-	,.inbuf_mem_wr_data(inbuf_mem_wr_data)
-	,.inbuf_mem_rd_req(inbuf_mem_rd_req)
-	,.inbuf_mem_wr_req(inbuf_mem_wr_req)
-	inbuf_mem_rd_addr,
-	inbuf_mem_wr_addr
+	,.cntl_inbuf_fifo_rd_rq(cntl_inbuf_fifo_rd_rq)
+	,.cntl_inbuf_fifo_mem_en(cntl_inbuf_fifo_mem_en)
+	,.inbuf_fifo_cntl_empty(inbuf_fifo_cntl_empty)
 
 );
 

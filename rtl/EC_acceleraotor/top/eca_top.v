@@ -193,7 +193,7 @@ module control_top control_top_i #(
 	,.engine_en						 ( engine_en				  )	
 	,.MReg							 ( MReg						  )
 
-	//output to output buffer
+	//output to input buffer
 	,.cntrl_inbuff_rd_en             ( cntrl_inbuff_rd_en         )
 	//output to output buffer
 	,.cntrl_outbuff_wr_en            ( cntrl_outbuff_wr_en        )

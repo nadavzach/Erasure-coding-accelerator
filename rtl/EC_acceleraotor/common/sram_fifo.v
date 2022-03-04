@@ -18,11 +18,10 @@
 
 //Notes:
 
-// wr & rd together arn't supported.priority will be given to read.
+// wr & rd together arn't supported.priority will be given to read
+// last data is always ready, the second one will take 1 clk cycle delay. can be fixed with another samp reg level, should be OK for this project.
 
 //TODO list:
-// - set guide line to read and write together + pushback
-// - TODO everything - currently just an IF
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
@@ -64,8 +63,7 @@ input [SRAM_WRAP_WIDTH-1:0] wr_data_in,
 
 output rd_data_val,
 output [SRAM_WRAP_WIDTH-1:0] rd_data,
-output wr_ack,
-
+output wr_ack;
 //status:
 
 output full,
@@ -81,6 +79,7 @@ logic [SRAM_ADDR_W:0] wptr;
 logic [SRAM_ADDR_W:0] rptr;
 
 logic [SRAM_WRAP_WIDTH-1:0] dout_samp_reg;
+logic dout_samp_reg_val;
 
 //sram control:
 logic sram_wr_req;
@@ -95,21 +94,27 @@ logic wr_din_to_samp_reg;
 // module logic:
 //======================
 
+assign rd_data = dout_samp_reg;
 
-assign sram_rd_req = rd_req & ~empty;
-assign sram_wr_req = wr_req & ~full & ~sram_rd_req;
+assign full = sram_full & dout_samp_reg_val;
+assign empty = sram_empty & ~dout_Samp_reg_val;
+
+assign wr_ack = sram_wr_req || wr_din_to_samp_reg;
+// sram control  logic:
+
 
 assign ptrs_eq = (rptr[SRAM_ADDR_W-1:0] == wptr[SRAM_ADDR_W-1:0]);
 assign ptrs_tu_bit_eq = (rptr[SRAM_ADDR_W] == wptr[SRAM_ADDR_W]);
 
-assign full  = ptrs_eq & ~ptrs_tu_bit_eq;
-assign empty = ptrs_eq & ptrs_tu_bit_eq;
+assign sram_full  = ptrs_eq & ~ptrs_tu_bit_eq;
+assign sram_empty = ptrs_eq & ptrs_tu_bit_eq;
 
 assign sram_addr = (sram_rd_req ? rptr[SRAM_ADDR_W-1:0] : wptr[SRAM_ADDR_W-1:0]);
 
-assign rd_data = dout_samp_reg;
+assign sram_rd_req = rd_req & ~empty;
+assign sram_wr_req = wr_req & ~full & ~wr_din_to_samp_reg & ~sram_rd_req;
 
-// sram control sync logic:
+
 
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
@@ -126,14 +131,27 @@ end
 
 // sampled register:
 
-assign wr_sram_dout_to_samp_reg = ;//TODO
-assign wr_din_to_samp_reg		 = ;//TODO
-
-
-//TODO: sunc logic for dout_samp_reg_val
+assign wr_sram_dout_to_samp_reg = sram_dout_val;
+assign wr_din_to_samp_reg		= wr_req & ~dout_samp_reg_val ;
 
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
+		dout_samp_reg_val	<=	1'b0;
+	end else begin
+		if(wr_sram_dout_to_samp_reg | wr_din_to_samp_reg ) begin
+			dout_samp_reg_val	<=	1'b1;
+		end else begin
+			if(rd_req) begin
+				dout_samp_reg_val	<=	1'b0;
+			end
+		end
+	end
+end
+
+
+
+always_ff @(posedge clk or negedge rstn) begin
+if(~rstn) begin
 		dout_samp_reg	<=	{SRAM_WRAP_WIDTH{1'b0}};
 	end else begin
 		if(wr_sram_dout_to_samp_reg) begin
@@ -145,8 +163,6 @@ always_ff @(posedge clk or negedge rstn) begin
 		end
 	end
 end
-
-
 
 
 // rptr:
