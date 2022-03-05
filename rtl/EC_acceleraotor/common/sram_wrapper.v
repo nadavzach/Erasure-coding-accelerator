@@ -36,7 +36,7 @@ module sram_wrapper #(
 //  local parameters (DON'T CHANGE)
 //=================================
 
-	parameter SRAM_WRAP_ADDR_W = $clog2(SRAM_DEPTH),
+	parameter SRAM_WRAP_ADDR_W = $clog2(SRAM_WRAP_DEPTH),
 	parameter INT_MEM_W = SRAM_WRAP_WIDTH/2,
 	parameter INT_MEM_DEPTH = SRAM_WRAP_DEPTH,
 	parameter INT_MEM_ADDR_W = SRAM_WRAP_ADDR_W + 1
@@ -47,7 +47,7 @@ module sram_wrapper #(
 //===========
 
 input clk,
-input_rst_n,
+input rst_n,
 
 input mem_en,
 input rd_req,
@@ -59,7 +59,7 @@ input [SRAM_WRAP_WIDTH-1:0] wr_data_in,
 //  outputs:
 //===========
 
-output rd_data_val,
+output reg rd_data_val,
 output [SRAM_WRAP_WIDTH-1:0] rd_data
 );
 
@@ -95,7 +95,7 @@ logic [INT_MEM_ADDR_W-1:0] A2;
 assign A1 = {address,1'b0};
 assign A2 = {address,1'b1};
 
-assign rd_data = {O1,O2}
+assign rd_data = {O1,O2};
 
 assign I1 = wr_data_in[INT_MEM_W-1:0];
 assign I2 = wr_data_in[2*INT_MEM_W-1:INT_MEM_W];
@@ -136,8 +136,3 @@ end//always_ff
 
 
 endmodule
-
-
-
-
-
