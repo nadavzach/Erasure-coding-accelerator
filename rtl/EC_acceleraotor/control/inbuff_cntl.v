@@ -26,9 +26,20 @@ module inbuff_cntl #(
 //=================================
 //  user parameters 
 //=================================
-//
+	parameter K_MAX = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter W = 4,
+	parameter PACKET_LENGTH =  2,
 
-`include "global_parameters.sv"
+
+	//bitmatrix memory parameters:
+
+	parameter BM_MEM_DEPTH = M_MAX,
+	parameter BM_COL_W = W*W*K_MAX,
+	parameter BM_MEM_W = BM_COL_W,
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W)
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
@@ -70,9 +81,9 @@ module inbuff_cntl #(
 // counter
 logic compute_cyc_count_en;
 logic [M_MAX-1:0] compute_cyc_counter;
+logic [M_MAX-1:0] compute_cyc_counter_req_value;
 logic [M_MAX-1:0] compute_cyc_counter_max_value;
 logic new_data_req;
-logic compute_cyc_count_en;
 
 logic pending_data_used;
 //bm memory
@@ -110,7 +121,7 @@ always_ff @(posedge clk or negedge rstn) begin
 				if(compute_cyc_counter >= compute_cyc_counter_max_value) begin // wrap around when reaching M-1
 					compute_cyc_counter	<=	{M_MAX{1'b0}};
 				end else begin
-					compute_cyc_counter	<=	compute_cyc_counter + ({(M_MAX-1){1'b0}},1'b1};
+					compute_cyc_counter	<=	compute_cyc_counter + {{(M_MAX-1){1'b0}},1'b1};
 				end
 			end
 		end
@@ -145,8 +156,8 @@ end
 assign cntl_inbuf_fifo_rd_rq = cntrl_inbuff_rd_en
 					          &(
 					          new_data_req// TODO add some logic so it will not read while no operation in the engine - maybe smg with eng_inbuf_cntl_data_used
-							  ||
-					          ~inbuf_eng_dout_reg_val//in calc mode but no data in output reg (no valid)
+							  //||
+					          //~inbuf_eng_dout_reg_val//in calc mode but no data in output reg (no valid) not declared, for now put under comment
 					          );
 
 
@@ -197,9 +208,3 @@ assign cntl_inbuf_fifo_rd_rq = cntrl_inbuff_rd_en
 
 
 endmodule
-
-
-
-
-
-

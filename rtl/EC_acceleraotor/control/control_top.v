@@ -30,13 +30,28 @@ module control_top #(
 //=================================
 //  user parameters 
 //=================================
-`include "global_parameters.sv"
+	parameter K_MAX = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter W = 4,
+	parameter PACKET_LENGTH =  2,
 
+
+	//bitmatrix memory parameters:
+
+	parameter BM_MEM_DEPTH = M_MAX,
+	parameter BM_COL_W = W*W*K_MAX,
+	parameter BM_MEM_W = BM_COL_W,
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W),
+	
+	// inbuffer parameters:
+	INBUF_MEM_DATA_W = 32,	// TODO: put correct value
+	INBUF_MEM_ADDR_W = 32 	// TODO: put correct value
+	
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
-
-
 
 )(
 	//===========
@@ -67,7 +82,7 @@ module control_top #(
 	output bm_coloum_data_out_val,
 	
 	//output to registers
-	output global_reg_wr_en
+	output global_reg_wr_en,
 	
 	//================
 	//  memories IFs:
@@ -146,7 +161,7 @@ bm_cntl bitmatrix_control_i(
 
 engine_fsm engine_fsm_i(
 //  inputs:
-,.clk(clk)
+.clk(clk)
 ,.rstn(rstn)
 //user input 
 ,.start_eng(engine_en)
@@ -170,7 +185,7 @@ engine_fsm engine_fsm_i(
 //output to registers
 ,.global_reg_wr_en(global_reg_wr_en)
 
-)
+);
 
 //----------------------------
 //	input buffer control: 
@@ -201,8 +216,3 @@ inbuff_cntl inbuff_cntl_i (
 
 	
 endmodule
-
-
-
-
-

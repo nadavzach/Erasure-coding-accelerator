@@ -26,7 +26,20 @@ module engine_fsm  #(
 	//=================================
 	//  user parameters 
 	//=================================
-		`include "global_parameters.v"
+	parameter K_MAX = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter W = 4,
+	parameter PACKET_LENGTH =  2,
+
+
+	//bitmatrix memory parameters:
+
+	parameter BM_MEM_DEPTH = M_MAX,
+	parameter BM_COL_W = W*W*K_MAX,
+	parameter BM_MEM_W = BM_COL_W,
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W),
 	//
 	//=================================
 	//  local parameters (DON'T CHANGE)
@@ -35,8 +48,8 @@ module engine_fsm  #(
 	//states:
 	localparam INIT_ST			= 2'd0,
 	localparam CALC_ST			= 2'd1,
-	localparam FINISH_CALC_ST	= 2'd2
-
+	localparam FINISH_CALC_ST	= 2'd2,
+	localparam STATES_NUM		= 3
 
 )(
 	//===========
@@ -61,22 +74,22 @@ module engine_fsm  #(
 	//===========
 	
 	//global outputs:
-	output eng_rstn,
+	output reg eng_rstn,
 	
 	//output to input buffer
-	output cntrl_inbuff_rd_en,
+	output reg cntrl_inbuff_rd_en,
 	
 	//output to output buffer
-	output cntrl_outbuff_wr_en,
+	output reg cntrl_outbuff_wr_en,
 	
 	//output to bitmatrix memory
-	output cntrl_bm_mem_rd_en,
+	output reg cntrl_bm_mem_rd_en,
 	
 	//output to engine
-	output cntrl_eng_calc_en,
+	output reg cntrl_eng_calc_en,
 	
 	//output to registers
-	output global_reg_wr_en
+	output reg global_reg_wr_en
 
 
 );
@@ -84,12 +97,12 @@ module engine_fsm  #(
 //======================
 //  signals declaration:
 //======================
-logic [STATES_NUM-1:0] cur_st;
-logic [STATES_NUM-1:0] nxt_st;
+logic [$clog2(STATES_NUM)-1:0] cur_st;
+logic [$clog2(STATES_NUM)-1:0] nxt_st;
 
 
 // cur state sync block
-always_ff( posedge clk or negedge rstn) begin
+always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
 		cur_st	<=	INIT_ST;
 	end else begin
@@ -103,9 +116,9 @@ always_comb begin
 	//default:
 	nxt_st	=	INIT_ST;
 	
-	case(cur_st):
+	case(cur_st)
 
-	INIT_ST begin
+	INIT_ST: begin
 		if(start_eng) begin
 			nxt_st	=	CALC_ST;
 		end else begin //loop
@@ -114,28 +127,29 @@ always_comb begin
 
 	end
 
-	CALC_ST	begin
+	CALC_ST: begin
 		if(~start_eng) begin
 			nxt_st	=	FINISH_CALC_ST;
 		end else begin//loop
 			nxt_st	=	CALC_ST;
+		end
 			
-	
 	end
 
-	FINISH_CALC_ST begin
-		if(start_eng)
+	FINISH_CALC_ST: begin
+		if(start_eng) begin
 			nxt_st	=	CALC_ST;
 		end else begin
 			if(eng_empty) begin
 				nxt_st	=	INIT_ST;
 			end else begin//loop
 					nxt_st = FINISH_CALC_ST;
-				end
+			end
 		end
-
+		
 	end
-
+	
+	endcase
 
 end
 
@@ -150,7 +164,7 @@ always_comb begin
 	eng_rstn				=	1'b1;
 //
 	
-	case(cur_st):
+	case(cur_st)
 
 	INIT_ST:	
 	begin
@@ -158,15 +172,11 @@ always_comb begin
 		eng_rstn				=	1'b0;
 	end
 
-	end
-
 	CALC_ST:	
 	begin
 		cntrl_inbuff_rd_en		=	1'b1;
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
-
-	
 	end
 
 	FINISH_CALC_ST:	
@@ -174,15 +184,10 @@ always_comb begin
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
 	end
-
+	
+	endcase
 
 end
 
 
-
 endmodule
-
-
-
-
-
