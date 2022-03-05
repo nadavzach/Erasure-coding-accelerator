@@ -31,13 +31,15 @@ module sram_fifo #(
 //  user parameters 
 //=================================
 	parameter SRAM_WRAP_WIDTH = 32,//defines the 2 ports combined width, have to be a complete multp of 2
-	parameter SRAM_WRAP_DEPTH = 100 //num of sramwidth rows
+	parameter SRAM_WRAP_DEPTH = 100, //num of sramwidth rows
 
 
 
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
+
+	parameter SRAM_ADDR_W = $clog2(SRAM_WRAP_DEPTH)
 
 
 
@@ -63,7 +65,7 @@ input [SRAM_WRAP_WIDTH-1:0] wr_data_in,
 
 output rd_data_val,
 output [SRAM_WRAP_WIDTH-1:0] rd_data,
-output wr_ack;
+ output wr_ack,
 //status:
 
 output full,
@@ -96,9 +98,6 @@ logic wr_din_to_samp_reg;
 
 assign rd_data = dout_samp_reg;
 
-assign full = sram_full & dout_samp_reg_val;
-assign empty = sram_empty & ~dout_Samp_reg_val;
-
 assign wr_ack = sram_wr_req || wr_din_to_samp_reg;
 // sram control  logic:
 
@@ -114,10 +113,12 @@ assign sram_addr = (sram_rd_req ? rptr[SRAM_ADDR_W-1:0] : wptr[SRAM_ADDR_W-1:0])
 assign sram_rd_req = rd_req & ~empty;
 assign sram_wr_req = wr_req & ~full & ~wr_din_to_samp_reg & ~sram_rd_req;
 
+assign full = sram_full & dout_samp_reg_val;
+assign empty = sram_empty & ~dout_samp_reg_val;
 
 
-always_ff @(posedge clk or negedge rstn) begin
-	if(~rstn) begin
+always_ff @(posedge clk or negedge rst_n) begin
+	if(~rst_n) begin
 		sram_dout_val	<=	1'b0;
 	end else begin
 		if(sram_rd_req) begin
@@ -134,8 +135,8 @@ end
 assign wr_sram_dout_to_samp_reg = sram_dout_val;
 assign wr_din_to_samp_reg		= wr_req & ~dout_samp_reg_val ;
 
-always_ff @(posedge clk or negedge rstn) begin
-	if(~rstn) begin
+always_ff @(posedge clk or negedge rst_n) begin
+	if(~rst_n) begin
 		dout_samp_reg_val	<=	1'b0;
 	end else begin
 		if(wr_sram_dout_to_samp_reg | wr_din_to_samp_reg ) begin
@@ -150,8 +151,8 @@ end
 
 
 
-always_ff @(posedge clk or negedge rstn) begin
-if(~rstn) begin
+always_ff @(posedge clk or negedge rst_n) begin
+if(~rst_n) begin
 		dout_samp_reg	<=	{SRAM_WRAP_WIDTH{1'b0}};
 	end else begin
 		if(wr_sram_dout_to_samp_reg) begin
@@ -168,8 +169,8 @@ end
 // rptr:
 
 
-always_ff @(posedge clk or negedge rstn) begin
-	if(~rstn) begin
+always_ff @(posedge clk or negedge rst_n) begin
+	if(~rst_n) begin
 		rptr	<=	{SRAM_ADDR_W{1'b0}};
 	end else begin
 		if(sram_rd_req) begin
@@ -185,8 +186,8 @@ end
 
 // wptr:
 
-always_ff @(posedge clk or negedge rstn) begin
-	if(~rstn) begin
+always_ff @(posedge clk or negedge rst_n) begin
+	if(~rst_n) begin
 		wptr	<=	{SRAM_ADDR_W{1'b0}};
 	end else begin
 		if(sram_wr_req) begin
@@ -199,14 +200,13 @@ always_ff @(posedge clk or negedge rstn) begin
 		end
 	end
 end
-
+  
 
 //==============================
 //  submodules instantinations:
 //==============================
 
-module sram_wrapper #(
-
+sram_wrapper #(
 	.SRAM_WRAP_WIDTH(SRAM_WRAP_WIDTH)
 	,.SRAM_WRAP_DEPTH(SRAM_WRAP_DEPTH) 
 )
@@ -227,8 +227,3 @@ sram_wrapper_fifo_i
 
 
 endmodule
-
-
-
-
-
