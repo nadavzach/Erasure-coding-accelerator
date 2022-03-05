@@ -57,7 +57,14 @@ parameter K_MAX = 128,
 	input clk,
 	input rstn,
 	input eng_rstn,
-	
+
+//input from user - TEMP
+	input bmu_bm_mux_sel_reg_wr,
+	input [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_din [0:BM_MULT_UNIT_NUM-1],
+
+	input and_mask_mask_reg_wr,
+	input [PACKET_LENGTH-1:0] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1],
+
 //input from inbuff
 
 	input [PACKET_LENGTH-1:0] inbuf_eng_din_reg [0:BM_MULT_UNIT_NUM-1][0:W-1] ,
@@ -128,8 +135,45 @@ assign eng_outbuf_dout_reg	= eng_pl_reg_2;
 assign eng_outbuf_wr_req	= eng_pl_reg_val_2 & cntrl_eng_calc_en & ~outbuf_eng_full;
 
 //cntl
-assign data_used = cntrl_eng_calc_en & eng_pl_reg_val_0;
+assign data_used	= cntrl_eng_calc_en & eng_pl_reg_val_0;
 assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2);
+
+
+
+// engine registers TEMP:
+
+generate
+	for(genvar pck_tree_xor_unit_idx = 0; pck_tree_xor_unit_idx < PCK_TREE_XOR_UNITS_NUM; pck_tree_xor_unit_idx = pck_tree_xor_unit_idx + 1) begin
+		for(genvar w_idx = 0; w_idx < W; w_idx = w_idx + 1) begin
+			for(genvar k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
+				always_ff @(posedge clk or negedge rstn) begin
+					if(~rstn) begin
+						and_mask_mask_reg_arr[pck_tree_xor_unit_idx][w_idx][k_idx]	<=	{PACKET_LENGTH{1'b0}};
+					end else begin
+						if(and_mask_mask_reg_wr) begin
+							and_mask_mask_reg_arr[pck_tree_xor_unit_idx][w_idx][k_idx]	<=	and_mask_mask_reg_din[pck_tree_xor_unit_idx][w_idx][k_idx];
+						end
+					end
+				end
+			end
+		end
+	end
+endgenerate
+
+generate
+	for(genvar bm_mult_unit_idx = 0; bm_mult_unit_idx < BM_MULT_UNIT_NUM; bm_mult_unit_idx = bm_mult_unit_idx + 1) begin
+			always_ff @(posedge clk or negedge rstn) begin
+				if(~rstn) begin
+					bmu_bm_mux_sel_reg_arr[bm_mult_unit_idx]	<=	{W{1'b0}};
+				end else begin
+					if(bmu_bm_mux_sel_reg_wr) begin
+						bmu_bm_mux_sel_reg_arr[bm_mult_unit_idx]	<=	bmu_bm_mux_sel_reg_din[bm_mult_unit_idx];
+					end
+				end
+			end
+		end
+endgenerate
+
 
 //==================================
 // pipe line logic : 
@@ -241,8 +285,7 @@ generate
 		    ,.mult_product	( bm_mult_d_out_arr[bmu_inst_idx]	)
 		);
 
-		assign bmu_bm_mux_arr_o[bmu_inst_idx] = cntl_eng_bm_col_din_reg[bmu_bm_mux_sel_reg_arr[bmu_inst_idx]];// TODO - ask bnya if this bus mux is ok or need more implicit coding
-
+		assign bmu_bm_mux_arr_o[bmu_inst_idx] = cntl_eng_bm_col_din_reg[bmu_bm_mux_sel_reg_arr[bmu_inst_idx]];
 	end//for - bm_mult_idx
 endgenerate
 

@@ -49,23 +49,17 @@ module inbuff_cntl #(
 	//input from control regs:
 	input MReg,
 
-//===========
-//  outputs:
-//===========
-	output inbuf_eng_dout_reg_val,
 
 //====================
-//   mem I/F:
+//  sram FIFO I/F:
 //====================
 
-	input  [INBUF_MEM_DATA_W-1:0]	inbuf_mem_rd_data,
-	input  inbuf_mem_rd_data_val,
+	output cntl_inbuf_fifo_rd_rq,
+	output cntl_inbuf_fifo_mem_en,
+	
+	input inbuf_fifo_cntl_empty//TODO add logic to when there's rd req to FIFO and it's empty
 
-	output [INBUF_MEM_DATA_W-1:0]	inbuf_mem_wr_data,
-	output inbuf_mem_rd_req,
-	output inbuf_mem_wr_req,
-	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_rd_addr,
-	output [INBUF_MEM_ADDR_W-1:0]  inbuf_mem_wr_addr
+
 
 );
 
@@ -81,10 +75,6 @@ logic new_data_req;
 logic compute_cyc_count_en;
 
 //bm memory
-logic [PACKET_LENGTH-1:0] inbuf_mem_dout_reg_0 [0:W-1] [0:BM_MULT_UNIT_NUM-1];
-logic [PACKET_LENGTH-1:0] inbuf_mem_dout_reg_1 [0:W-1] [0:BM_MULT_UNIT_NUM-1];
-logic inbuf_mem_dout_reg_val_0;
-logic inbuf_mem_dout_reg_val_1;
 
 //======================
 //  compute cycle counter:
@@ -141,54 +131,58 @@ end
 //============================
 //  input buffer memory control:
 //============================
-assign bm_cntl_bm_mem_rd_rq = cntrl_inbuff_rd_en
+assign cntl_inbuf_fifo_rd_rq = cntrl_inbuff_rd_en
 					          &(
 					          new_data_req// TODO add some logic so it will not read while no operation in the engine - maybe smg with eng_inbuf_cntl_data_used
 							  ||
 					          ~inbuf_eng_dout_reg_val//in calc mode but no data in output reg (no valid)
 					          );
 
-//output register + val sync block					   
-always_ff @(posedge clk or negedge rstn) begin
-	if(~rstn) begin
-		inbuf_mem_dout_reg_val_0	<=	1'b0;
-	end else begin
-		if(~eng_rstn) begin
-			inbuf_mem_dout_reg_val_0	<=	1'b0;
-		end else begin
-			if(inbuf_mem_rd_data_val) begin
-				inbuf_mem_dout_reg_val_0	<=	1'b1;
-			end
-		end
-	end
-end
 
 
-//assigning the memory data out  to the data reg array
-genvar i,j;
-generate 
-	for(i=0;i<BM_MULT_UNIT_NUM;i=i+1) begin
-		for(j=0;j<W;j=j+1) begin
-
-//output register + val sync block					   
-			always_ff @(posedge clk or negedge rstn) begin
-				if(~rstn) begin
-					inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
-				end else begin
-					if(~eng_rstn) begin
-						inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
-					end else begin
-						if(bm_mem_bm_cntl_rd_data_val) begin
-							inbuf_mem_dout_reg_0[j][i]	<=	inbuf_mem_rd_data[i*j*W +: W];
-						end
-					end
-				end
-			end
-		end
-	end
 
 
-endgenerate
+////output register + val sync block					   
+//always_ff @(posedge clk or negedge rstn) begin
+//	if(~rstn) begin
+//		inbuf_mem_dout_reg_val_0	<=	1'b0;
+//	end else begin
+//		if(~eng_rstn) begin
+//			inbuf_mem_dout_reg_val_0	<=	1'b0;
+//		end else begin
+//			if(inbuf_mem_rd_data_val) begin
+//				inbuf_mem_dout_reg_val_0	<=	1'b1;
+//			end
+//		end
+//	end
+//end
+
+//
+////assigning the memory data out  to the data reg array
+//genvar i,j;
+//generate 
+//	for(i=0;i<BM_MULT_UNIT_NUM;i=i+1) begin
+//		for(j=0;j<W;j=j+1) begin
+//
+////output register + val sync block					   
+//			always_ff @(posedge clk or negedge rstn) begin
+//				if(~rstn) begin
+//					inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
+//				end else begin
+//					if(~eng_rstn) begin
+//						inbuf_mem_dout_reg_0[j][i]	<=	{PACKET_LENGTH{1'b0}};
+//					end else begin
+//						if(bm_mem_bm_cntl_rd_data_val) begin
+//							inbuf_mem_dout_reg_0[j][i]	<=	inbuf_mem_rd_data[i*j*W +: W];
+//						end
+//					end
+//				end
+//			end
+//		end
+//	end
+//
+//
+//endgenerate
 
 
 endmodule

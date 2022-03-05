@@ -65,7 +65,7 @@ input [SRAM_WRAP_WIDTH-1:0] wr_data_in,
 
 output rd_data_val,
 output [SRAM_WRAP_WIDTH-1:0] rd_data,
-output wr_ack,
+ output wr_ack,
 //status:
 
 output full,
@@ -200,13 +200,13 @@ always_ff @(posedge clk or negedge rst_n) begin
 		end
 	end
 end
+  
 
 //==============================
 //  submodules instantinations:
 //==============================
 
 sram_wrapper #(
-
 	.SRAM_WRAP_WIDTH(SRAM_WRAP_WIDTH)
 	,.SRAM_WRAP_DEPTH(SRAM_WRAP_DEPTH) 
 )
