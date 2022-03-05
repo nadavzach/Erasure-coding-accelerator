@@ -136,7 +136,7 @@ assign eng_outbuf_wr_req	= eng_pl_reg_val_2 & cntrl_eng_calc_en & ~outbuf_eng_fu
 
 //cntl
 assign data_used	= cntrl_eng_calc_en & eng_pl_reg_val_0;
-assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2)
+assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2);
 
 
 
