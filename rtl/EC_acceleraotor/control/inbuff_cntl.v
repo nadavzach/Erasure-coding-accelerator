@@ -74,6 +74,7 @@ logic [M_MAX-1:0] compute_cyc_counter_max_value;
 logic new_data_req;
 logic compute_cyc_count_en;
 
+logic pending_data_used;
 //bm memory
 
 //======================
@@ -82,11 +83,21 @@ logic compute_cyc_count_en;
 
 //	description:
 // countes the M compute cycles for each data line, to indicate when there's a need for a new data line/ the engine can be emptied
-assign compute_cyc_count_en	=  eng_inbuf_cntl_data_used;
+assign compute_cyc_count_en	=  eng_inbuf_cntl_data_used & (~inbuf_fifo_cntl_empty || pending_data_used);
 
 assign new_data_req =  ~|(compute_cyc_counter ^ compute_cyc_counter_req_value);//comparator
 
-
+always_ff @(posedge clk or negedge rstn) begin
+	if(rstn) begin
+		pending_data_used	<=	1'b0;
+	end else begin
+		if(eng_inbuf_cntl_data_used & inbuf_fifo_cntl_empty) begin
+			pending_data_used	<=	1'b1;
+		end else begin
+			if(pending_data_used
+		end
+	end
+end
 // counter logic
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin

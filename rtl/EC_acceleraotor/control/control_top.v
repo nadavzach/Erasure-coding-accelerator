@@ -49,7 +49,7 @@ module control_top #(
 	//input from engine
 	input eng_empty,
 	input eng_cntl_data_used,
-	
+	// input from input buffer:
 	//input from registers:
 
 	input EcaEnReg,
@@ -59,8 +59,6 @@ module control_top #(
 	//  outputs:
 	//===========
 	output eng_rstn_o,
-	//output to output buffer
-	output cntrl_inbuff_rd_en,
 	//output to output buffer
 	output cntrl_outbuff_wr_en,
 	//output to engine

@@ -192,9 +192,12 @@ module control_top control_top_i #(
 	,.EcaEnReg				         ( eca_en					  )
 	,.engine_en						 ( engine_en				  )	
 	,.MReg							 ( MReg						  )
-
+	// input from input buffer		 
+	,.inbuf_fifo_cntl_empty			 ( inbuf_fifo_cntl_empty	  )
 	//output to input buffer
-	,.cntrl_inbuff_rd_en             ( cntrl_inbuff_rd_en         )
+	,.cntl_inbuf_fifo_rd_rq			 ( cntl_inbuf_fifo_rd_rq	  ) 	
+	,.cntl_inbuf_fifo_mem_en		 ( cntl_inbuf_fifo_mem_en	  )
+
 	//output to output buffer
 	,.cntrl_outbuff_wr_en            ( cntrl_outbuff_wr_en        )
 	//output to engine
@@ -244,6 +247,7 @@ bit_matrix_memory_i
 //-------bitmatrix memory sram end --------//
 
 
+//-------output buffer start  --------//
 module sram_fifo output_buffer_i #(
 
 	.SRAM_WRAP_WIDTH//TODO
@@ -262,6 +266,33 @@ module sram_fifo output_buffer_i #(
 ,.empty(empty)
 
 );
+
+//-------output buffer end  --------//
+
+
+//-------input buffer start  --------//
+
+
+module input_buffer input_buffer_i #(
+	,.cntl_inbuf_fifo_rd_rq(cntl_inbuf_fifo_rd_rq)
+	,.cntl_inbuf_fifo_mem_en(cntl_inbuf_fifo_mem_en)
+	,.inbuf_wr_req(inbuf_wr_req)
+	,.inbuf_wr_data( inbuf_wr_data)
+	,.inbuf_fifo_cntl_empty(inbuf_fifo_cntl_empty)
+	,.inbuf_dout_reg_val(inbuf_eng_din_reg_val)
+	,. inbuf_dout_reg( inbuf_eng_din_reg) 
+
+
+);
+//	input inbuf_wr_req,
+//	input [INBUF_DATA_W-1:0] inbuf_wr_data,
+//	output inbuf_fifo_cntl_empty,
+//	output inbuf_dout_reg_val,
+//	output [PACKET_LENGTH-1:0] inbuf_dout_reg [0:BM_MULT_UNIT_NUM-1][0:W-1] 
+
+
+
+//-------input buffer end  --------//
 
 endmodule
 

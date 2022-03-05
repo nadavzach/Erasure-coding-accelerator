@@ -3,12 +3,14 @@
     "",
     "\\rtl",
     "\\rtl\\EC_acceleraotor",
-    "\\rtl\\EC_acceleraotor\\common",
     "\\rtl\\EC_acceleraotor\\control",
     "\\rtl\\EC_acceleraotor\\engine",
+    "\\rtl\\EC_acceleraotor\\input_buffer",
+    "\\rtl\\EC_acceleraotor\\memories",
+    "\\rtl\\EC_acceleraotor\\top",
     "\\rtl\\templates",
     "\\rtl\\test_bench"
   ],
-  "SelectedNode": "\\rtl\\EC_acceleraotor\\control\\inbuff_cntl.v",
+  "SelectedNode": "\\rtl\\EC_acceleraotor\\control\\bm_cntl.v",
   "PreviewInSolutionExplorer": false
 }

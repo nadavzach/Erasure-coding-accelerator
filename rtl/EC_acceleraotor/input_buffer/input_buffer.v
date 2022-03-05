@@ -41,7 +41,6 @@ module input_buffer #(
 //  inputs:
 //===========
 
-	input cntrl_inbuff_rd_en,
 	input cntl_inbuf_fifo_rd_rq,
 	input cntl_inbuf_fifo_mem_en,
 
