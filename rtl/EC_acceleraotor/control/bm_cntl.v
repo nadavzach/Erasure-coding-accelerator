@@ -23,13 +23,26 @@
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
-`include "global_parameters.sv"
 module bm_cntl #(
 
 //=================================
 //  user parameters 
 //=================================
-//
+
+	parameter K_MAX = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter W = 4,
+	parameter PACKET_LENGTH =  2,
+
+
+	//bitmatrix memory parameters:
+
+	parameter BM_MEM_DEPTH = M_MAX,
+	parameter BM_COL_W = W*W*K_MAX,
+	parameter BM_MEM_W = BM_COL_W,
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W)
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
@@ -55,7 +68,7 @@ module bm_cntl #(
 //  outputs:
 //===========
 	output [W-1:0] bm_col_data_out [0:W-1] [0:K_MAX-1],
-	output bm_coloum_data_out_val,
+	output reg bm_coloum_data_out_val,
 //====================
 //  bitmatrix mem I/F:
 //====================
@@ -88,9 +101,9 @@ logic [BM_MEM_ADDR_W-1:0] bm_mem_col_addr_arr [0:M_MAX-1];
 //	description:
 //	counter indicates what column shoud be read next from the bitmatrix memory
 
-assign bm_col_count_en	= eng_fsm_bm_cntl_rd_en & bm_mem_bm_cntl_rd_data_val// - in CALC state and data is read from mem to data out reg
+assign bm_col_count_en	= eng_fsm_bm_cntl_rd_en & bm_mem_bm_cntl_rd_data_val;// - in CALC state and data is read from mem to data out reg
 
-assign bm_col_counter_max_value = MReg-{{(M_MAX-1){1'b0}},1'b1}
+assign bm_col_counter_max_value = MReg-{{(M_MAX-1){1'b0}},1'b1};
 
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
@@ -103,7 +116,7 @@ always_ff @(posedge clk or negedge rstn) begin
 				if(bm_col_counter >= bm_col_counter_max_value) begin // wrap around when reaching M-1
 					bm_col_counter	<=	{M_MAX{1'b0}};
 				end else begin
-					bm_col_counter	<=	bm_col_counter + ({(M_MAX-1){1'b0}},1'b1};
+					bm_col_counter	<=	bm_col_counter + {{(M_MAX-1){1'b0}},1'b1};
 				end
 			end
 		end
@@ -143,7 +156,7 @@ genvar i,j;
 generate 
 	for(i=0;i<K_MAX;i=i+1) begin
 		for(j=0;j<W;j=j+1) begin
-			bm_col_data_out[j][i] = bm_coloum_data_out_reg[i*j*W +: W];
+			assign bm_col_data_out[j][i] = bm_coloum_data_out_reg[i*j*W +: W];
 		end
 	end
 endgenerate
@@ -152,8 +165,3 @@ endgenerate
 assign bm_cntl_bm_mem_rd_addr = bm_mem_col_addr_arr[bm_col_counter];
 
 endmodule
-
-
-
-
-
