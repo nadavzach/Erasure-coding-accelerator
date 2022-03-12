@@ -1,3 +1,11 @@
+/*------------------------------------------------------------------------------
+ * File          : bm_mult_unit.sv
+ * Project       : RTL
+ * Author        : epodnz
+ * Creation date : Jan 13, 2022
+ * Description   :
+ *------------------------------------------------------------------------------*/
+
 //=====================================================================================================
 //
 // Module:  and_xor_unit
@@ -26,7 +34,17 @@ module bm_mult_unit #(
 //=================================
 //  user parameters 
 //=================================
-`include "global_parameters.v"
+ 
+	parameter K_MAX = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter K = 2,
+	parameter W = 4,
+	parameter PACKET_LENGTH =  2
+
+
+    
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
@@ -65,7 +83,7 @@ module bm_mult_unit #(
 
 		for (j=0; j<  W; j=j+1) begin
 			for (i=0; i < W; i=i+1) begin
-				assign and_product[j][i] = (data_packet[i] & {PACKET_LENGTH{bitmatrix_cols[j]}});
+				assign and_product[j][i] = (data_packet[i] & {PACKET_LENGTH{bitmatrix_cols[j][i]}});
 			end
 		end
 	// tree xor between packets:
@@ -74,6 +92,7 @@ module bm_mult_unit #(
 		
 			tree_xor #(
 			.INPUT_NUM(W)
+            ,.PACKET_LENGTH(PACKET_LENGTH)
 			) tree_xor_i (
 			//input
 			.packets_arr(and_product[k]),
@@ -86,8 +105,3 @@ module bm_mult_unit #(
 	endgenerate
 
 endmodule
-
-
-
-
-

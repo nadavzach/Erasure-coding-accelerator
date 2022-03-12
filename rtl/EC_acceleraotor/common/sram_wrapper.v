@@ -38,7 +38,7 @@ module sram_wrapper #(
 
 	parameter SRAM_WRAP_ADDR_W = $clog2(SRAM_WRAP_DEPTH),
 	parameter INT_MEM_W = SRAM_WRAP_WIDTH/2,
-	parameter INT_MEM_DEPTH = SRAM_WRAP_DEPTH,
+	parameter INT_MEM_DEPTH = 2*SRAM_WRAP_DEPTH,
 	parameter INT_MEM_ADDR_W = SRAM_WRAP_ADDR_W + 1
 
 )(
@@ -97,14 +97,14 @@ assign A2 = {address,1'b1};
 
 assign rd_data = {O1,O2};
 
-assign I1 = wr_data_in[INT_MEM_W-1:0];
-assign I2 = wr_data_in[2*INT_MEM_W-1:INT_MEM_W];
+assign I1 = wr_data_in[2*INT_MEM_W-1:INT_MEM_W];
+assign I2 = wr_data_in[INT_MEM_W-1:0];
 
-assign CEB1 = clk;//TODO - check this - should work on clk negedge?
-assign CEB2 = clk;//TODO - check this - should work on clk negedge? 
+assign CEB1 = clk;//TODO - check this - should work on clk negedge
+assign CEB2 = clk;//TODO - check this - should work on clk negedge 
 
-assign CSB1 = ~mem_en;
-assign CSB2 = ~mem_en;
+assign CSB1 = ~(mem_en & (wr_req | rd_req));
+assign CSB2 = ~(mem_en & (wr_req | rd_req));
 assign OEB1 = ~mem_en;
 assign OEB2 = ~mem_en;
 
@@ -126,13 +126,29 @@ end//always_ff
 //  submodules instantinations:
 //==============================
 
+ sram_flop_array #(
+
+	.SRAM_WRAP_WIDTH(SRAM_WRAP_WIDTH),
+	.SRAM_WRAP_DEPTH(SRAM_WRAP_DEPTH)
 
 
-//TODO instantiate sram
+) sram_flop_array_i(
+    .I1(I1)
+    ,.I2(I2)
+    ,.O1(O1)
+    ,.O2(O2)
+    ,.CEB1(CEB1)
+    ,.WEB1(WEB1)
+    ,.OEB1(OEB1)
+    ,.CSB1(CSB1)
+    ,.CEB2(CEB2)
+    ,.WEB2(WEB2)
+    ,.OEB2(OEB2)
+    ,.CSB2(CSB2)
 
+    ,.A1(A1)
+    ,.A2(A2)
 
-
-
-
+);
 
 endmodule

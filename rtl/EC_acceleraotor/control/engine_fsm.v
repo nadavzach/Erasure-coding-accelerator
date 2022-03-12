@@ -49,7 +49,9 @@ module engine_fsm  #(
 	localparam INIT_ST			= 2'd0,
 	localparam CALC_ST			= 2'd1,
 	localparam FINISH_CALC_ST	= 2'd2,
-	localparam STATES_NUM		= 3
+	localparam STATES_NUM		= 3,
+
+    parameter MREG_W    = $clog2(M_MAX)
 
 )(
 	//===========
@@ -64,7 +66,7 @@ module engine_fsm  #(
 	input start_eng,
 	
 	//input from control regs
-	input MReg,
+	input [MREG_W-1:0] MReg,
 	
 	//input from engine
 	input eng_empty,
@@ -88,7 +90,7 @@ module engine_fsm  #(
 	//output to engine
 	output reg cntrl_eng_calc_en,
 	
-	//output to registers
+	//output to isters
 	output reg global_reg_wr_en
 
 
@@ -161,6 +163,7 @@ always_comb begin
 	cntrl_outbuff_wr_en		=	1'b0;
 	cntrl_bm_mem_rd_en		=	1'b0;
 	global_reg_wr_en		=	1'b0;
+    cntrl_eng_calc_en       =   1'b0;
 	eng_rstn				=	1'b1;
 //
 	
@@ -177,12 +180,14 @@ always_comb begin
 		cntrl_inbuff_rd_en		=	1'b1;
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
+        cntrl_eng_calc_en       =   1'b1;
 	end
 
 	FINISH_CALC_ST:	
 	begin
 		cntrl_outbuff_wr_en		=	1'b1;
 		cntrl_bm_mem_rd_en		=	1'b1;
+        cntrl_eng_calc_en       =   1'b1;
 	end
 	
 	endcase

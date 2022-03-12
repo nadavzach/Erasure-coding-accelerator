@@ -63,7 +63,8 @@ parameter K_MAX = 128,
 	input [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_din [0:BM_MULT_UNIT_NUM-1],
 
 	input and_mask_mask_reg_wr,
-	input [PACKET_LENGTH-1:0] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1],
+	input  [BM_MULT_UNIT_NUM-1:0] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1],
+	//input [PACKET_LENGTH-1:0] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1],
 
 //input from inbuff
 
@@ -121,10 +122,10 @@ logic [PACKET_LENGTH-1:0] bm_mult_d_out_arr [0:BM_MULT_UNIT_NUM-1] [0:W-1];
 
 //stage 2 AND mask + xor
 
-logic [PACKET_LENGTH-1:0] and_mask_d_in_arr		[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
-logic [PACKET_LENGTH-1:0] and_mask_mask_reg_arr [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
-logic [PACKET_LENGTH-1:0] and_mask_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1];
-logic [PACKET_LENGTH-1:0] tree_xor_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1] ;
+logic [PACKET_LENGTH-1:0]       and_mask_d_in_arr		[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:BM_MULT_UNIT_NUM-1];
+logic [0:BM_MULT_UNIT_NUM-1]    and_mask_mask_reg_arr [0:PCK_TREE_XOR_UNITS_NUM-1];
+logic [PACKET_LENGTH-1:0]       and_mask_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:BM_MULT_UNIT_NUM-1];
+logic [PACKET_LENGTH-1:0]       tree_xor_d_out_arr	[0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1] ;
 
 //==================================
 // general control : 
@@ -143,21 +144,17 @@ assign eng_pl_empty = ~(eng_pl_reg_val_0 | eng_pl_reg_val_1 | eng_pl_reg_val_2);
 // engine registers TEMP:
 
 generate
-	for(genvar pck_tree_xor_unit_idx = 0; pck_tree_xor_unit_idx < PCK_TREE_XOR_UNITS_NUM; pck_tree_xor_unit_idx = pck_tree_xor_unit_idx + 1) begin
-		for(genvar w_idx = 0; w_idx < W; w_idx = w_idx + 1) begin
-			for(genvar k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
-				always_ff @(posedge clk or negedge rstn) begin
-					if(~rstn) begin
-						and_mask_mask_reg_arr[pck_tree_xor_unit_idx][w_idx][k_idx]	<=	{PACKET_LENGTH{1'b0}};
-					end else begin
-						if(and_mask_mask_reg_wr) begin
-							and_mask_mask_reg_arr[pck_tree_xor_unit_idx][w_idx][k_idx]	<=	and_mask_mask_reg_din[pck_tree_xor_unit_idx][w_idx][k_idx];
-						end
-					end
-				end
-			end
-		end
-	end
+    for(genvar pck_tree_xor_unit_idx = 0; pck_tree_xor_unit_idx < PCK_TREE_XOR_UNITS_NUM; pck_tree_xor_unit_idx = pck_tree_xor_unit_idx + 1) begin
+    	always_ff @(posedge clk or negedge rstn) begin
+    			if(~rstn) begin
+    				and_mask_mask_reg_arr[pck_tree_xor_unit_idx]	<=	{K_MAX{1'b0}};
+    			end else begin
+    				if(and_mask_mask_reg_wr) begin
+    					and_mask_mask_reg_arr[pck_tree_xor_unit_idx]	<=	and_mask_mask_reg_din[pck_tree_xor_unit_idx];
+    				end
+    			end
+    		end
+    	end
 endgenerate
 
 generate
@@ -296,7 +293,7 @@ generate
 	for(tree_xor_inst_idx = 0;tree_xor_inst_idx < PCK_TREE_XOR_UNITS_NUM;tree_xor_inst_idx = tree_xor_inst_idx + 1) begin
 
 		mask_unit #(
-		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+		.MASK_W(BM_MULT_UNIT_NUM), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
 		)mask_unit_i(
 		
 			//  inputs:
@@ -309,7 +306,7 @@ generate
 
 
 		packet_tree_xor #(
-		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+		.MASK_W(BM_MULT_UNIT_NUM), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
 		)packet_tree_i(
 		
 			//  inputs:
@@ -320,23 +317,67 @@ generate
 		);
 
 	end//for  
+
+
+
+//	for(tree_xor_inst_idx = 0;tree_xor_inst_idx < PCK_TREE_XOR_UNITS_NUM;tree_xor_inst_idx = tree_xor_inst_idx + 1) begin
+//
+//		mask_unit #(
+//		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+//		)mask_unit_i(
+//		
+//			//  inputs:
+//			.packets		( and_mask_d_in_arr[tree_xor_inst_idx]		) 
+//			,.mask			( and_mask_mask_reg_arr[tree_xor_inst_idx]	)
+//			
+//			//  outputs:
+//		    ,.mask_product	(and_mask_d_out_arr[tree_xor_inst_idx]		)
+//		);
+//
+//
+//		packet_tree_xor #(
+//		.K_MAX(K_MAX), .K_MIN(K_MIN), .W(W), .PACKET_LENGTH(PACKET_LENGTH) 
+//		)packet_tree_i(
+//		
+//			//  inputs:
+//			.packets		( and_mask_d_out_arr[tree_xor_inst_idx]		) 
+//			
+//			//  outputs:
+//		    ,.xor_product	( tree_xor_d_out_arr[tree_xor_inst_idx]		)
+//		);
+//
+//	end//for  
 endgenerate
 
 // assigning stage 1 output to the different mask + xor units:
-genvar  mask_unit_idx,k_idx,w1_idx;
+genvar  mask_unit_idx,bm_mult_unit_idx,w1_idx;
+
 generate
 	for( mask_unit_idx = 0; mask_unit_idx < PCK_TREE_XOR_UNITS_NUM; mask_unit_idx = mask_unit_idx + 1) begin
-		for( k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
+		for( bm_mult_unit_idx = 0; bm_mult_unit_idx < BM_MULT_UNIT_NUM; bm_mult_unit_idx = bm_mult_unit_idx + 1) begin
 			for ( w1_idx = 0; w1_idx < W; w1_idx = w1_idx + 1 ) begin
-				if(K_MIN*mask_unit_idx + k_idx < BM_MULT_UNIT_NUM) begin
-					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx][w1_idx];
-				end else begin
-					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = {W{1'b0}};
-				end
+				assign and_mask_d_in_arr[mask_unit_idx][w1_idx][bm_mult_unit_idx] = eng_pl_reg_1[bm_mult_unit_idx][w1_idx];
 			end
 		end
 	end
 endgenerate
+
+
+
+
+//generate
+//	for( mask_unit_idx = 0; mask_unit_idx < PCK_TREE_XOR_UNITS_NUM; mask_unit_idx = mask_unit_idx + 1) begin
+//		for( k_idx = 0; k_idx < K_MAX; k_idx = k_idx + 1) begin
+//			for ( w1_idx = 0; w1_idx < W; w1_idx = w1_idx + 1 ) begin
+//				if(K_MIN*mask_unit_idx + k_idx < BM_MULT_UNIT_NUM) begin
+//					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = eng_pl_reg_1[K_MIN*mask_unit_idx + k_idx][w1_idx];
+//				end else begin
+//					assign and_mask_d_in_arr[mask_unit_idx][w1_idx][k_idx] = {W{1'b0}};
+//				end
+//			end
+//		end
+//	end
+//endgenerate
 
 
 endmodule

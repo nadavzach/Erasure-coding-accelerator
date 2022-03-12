@@ -37,21 +37,24 @@ module control_top #(
 	parameter W = 4,
 	parameter PACKET_LENGTH =  2,
 
+	// inbuffer parameters:
+	INBUF_MEM_DATA_W = 32,	// TODO: put correct value
+	INBUF_MEM_ADDR_W = 32, 	// TODO: put correct value
+	
+//=================================
+//  local parameters (DON'T CHANGE)
+//=================================
+
+    parameter MREG_W    = $clog2(M_MAX),
+
 
 	//bitmatrix memory parameters:
 
 	parameter BM_MEM_DEPTH = M_MAX,
 	parameter BM_COL_W = W*W*K_MAX,
 	parameter BM_MEM_W = BM_COL_W,
-	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W),
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_DEPTH)
 	
-	// inbuffer parameters:
-	INBUF_MEM_DATA_W = 32,	// TODO: put correct value
-	INBUF_MEM_ADDR_W = 32 	// TODO: put correct value
-	
-//=================================
-//  local parameters (DON'T CHANGE)
-//=================================
 
 )(
 	//===========
@@ -68,7 +71,7 @@ module control_top #(
 	//input from registers:
 
 	input EcaEnReg,
-	input MReg,
+	input [MREG_W-1:0] MReg,
 
 	//===========
 	//  outputs:
@@ -78,7 +81,7 @@ module control_top #(
 	output cntrl_outbuff_wr_en,
 	//output to engine
 	output cntrl_eng_calc_en,
-	output [W-1:0] bm_col_data_out [0:W-1] [0:K_MAX-1],
+	output [W-1:0] bm_col_data_out [0:K_MAX-1] [0:W-1],
 	output bm_coloum_data_out_val,
 	
 	//output to registers
@@ -130,7 +133,14 @@ assign eng_rstn_o = eng_rstn;
 //--------------------------------------
 
 
-bm_cntl bitmatrix_control_i(
+bm_cntl #(
+.K_MAX(K_MAX)
+,.K_MIN(K_MIN)
+,.M_MAX(M_MAX)
+,.M_MIN(M_MIN)
+,.W(W)
+,.PACKET_LENGTH(PACKET_LENGTH)
+) bitmatrix_control_i(
 
 //  inputs:
 .clk(clk)
@@ -159,7 +169,15 @@ bm_cntl bitmatrix_control_i(
 // engine fsm
 //------------------------
 
-engine_fsm engine_fsm_i(
+engine_fsm #(
+.K_MAX(K_MAX)
+,.K_MIN(K_MIN)
+,.M_MAX(M_MAX)
+,.M_MIN(M_MIN)
+,.W(W)
+,.PACKET_LENGTH(PACKET_LENGTH)
+
+) engine_fsm_i(
 //  inputs:
 .clk(clk)
 ,.rstn(rstn)
@@ -192,7 +210,15 @@ engine_fsm engine_fsm_i(
 //----------------------------
 
 
-inbuff_cntl inbuff_cntl_i (
+inbuff_cntl #(
+.K_MAX(K_MAX)
+,.K_MIN(K_MIN)
+,.M_MAX(M_MAX)
+,.M_MIN(M_MIN)
+,.W(W)
+,.PACKET_LENGTH(PACKET_LENGTH)
+
+)inbuff_cntl_i (
 	.clk(clk)
 	,.rstn(rstn)
 	,.eng_rstn(eng_rstn)

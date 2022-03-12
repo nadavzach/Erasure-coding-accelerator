@@ -1,12 +1,12 @@
 //=====================================================================================================
 //
-// Module:  dyn_xor_unit
+// Module:  packet_tree_xor
 //
 // Description
 // ===========
 // 
-// takes K_MAX packets (each packet consists of PACKET_LENGTH words)
-// XOR the respective bits of K_MAX words (one word from every packet)
+// takes MASK_W packets (each packet consists of PACKET_LENGTH words)
+// XOR the respective bits of MASK_W words (one word from every packet)
 // output is the XOR result. its size is PACKET_LENGTH*W.
 //
 //======================================================================================================
@@ -21,12 +21,19 @@
 //======================================================================================================
 ////######################################### MODULE ####################################################
 
-module dyn_xor_unit #(
+module packet_tree_xor #(
 
 //=================================
 //  user parameters 
 //=================================
-	include "global_parameters.v"
+	parameter MASK_W = 128,
+	parameter K_MIN = 2,
+	parameter M_MAX = 128,
+	parameter M_MIN = 2,
+	parameter W = 4,
+	parameter K = 2,
+	parameter PACKET_LENGTH =  2 
+
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
@@ -37,7 +44,7 @@ module dyn_xor_unit #(
 //  inputs:
 //===========
 
-	input [PACKET_LENGTH-1:0] packets [0:W-1][0:K_MAX-1], 
+	input [PACKET_LENGTH-1:0] packets [0:W-1][0:MASK_W-1], 
 
 //===========
 //  outputs:
@@ -54,10 +61,11 @@ module dyn_xor_unit #(
 	genvar i;
 	generate
 	
-		for (i=0 i<W; i=i+1) begin
+		for (i=0; i<W; i=i+1) begin
 	
 			tree_xor #(
-			.INPUT_NUM(K_MAX)
+			.INPUT_NUM(MASK_W)
+            ,.PACKET_LENGTH(PACKET_LENGTH)
 			) tree_xor_i (
 			//input
 			.packets_arr(packets[i]),

@@ -33,14 +33,36 @@ module eca_top #(
 //=================================
 //  user parameters 
 //=================================
+	  
+	parameter K_MAX                     = 4,
+	parameter K_MIN                     = 2,
+	parameter W                         = 4,
+	parameter PACKET_LENGTH             = 2,
+	parameter M_MAX                     = 128,
+	parameter M_MIN                     = 2,
 
+	parameter BM_MULT_UNIT_NUM          = 4,
 
-`include "global_parameters.sv"
+  
+
+    parameter OUTBUF_MEM_DEPTH          = 10,
+    parameter INBUF_DATA_DEPTH          = 10,
 //=================================
 //  local parameters (DON'T CHANGE)
 //=================================
 
+    parameter MREG_W                    = $clog2(M_MAX),
 
+	parameter PCK_TREE_XOR_UNITS_NUM    = BM_MULT_UNIT_NUM / K_MIN,
+	parameter BMU_BM_MUX_SEL_W		    = $clog2(K_MAX),
+
+
+    parameter OUTBUF_DATA_W             = PACKET_LENGTH*W*PCK_TREE_XOR_UNITS_NUM,
+    parameter INBUF_DATA_W              = PACKET_LENGTH*W*BM_MULT_UNIT_NUM,
+
+    parameter BM_MEM_W                  = K_MAX * W * W,	
+    parameter BM_MEM_DEPTH              = M_MAX,      
+	parameter BM_MEM_ADDR_W             = $clog2(BM_MEM_DEPTH)
 
 )(
 
@@ -49,14 +71,14 @@ module eca_top #(
 	
 	input eca_en,
 	input engine_en,
-	input m_val,
+	input [MREG_W-1:0] m_val,
+    input m_val_wr,
 //input from user - TEMP
 	input bmu_bm_mux_sel_reg_wr,
 	input [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_din [0:BM_MULT_UNIT_NUM-1],
 
-	input and_mask_mask_reg_din,
-	input [PACKET_LENGTH-1:0] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1][0:W-1][0:K_MAX-1],
-
+	input and_mask_mask_reg_wr,
+	input  [BM_MULT_UNIT_NUM-1:0]and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1],
 
 //registers IF:
 //	input regs_wr_req,
@@ -69,16 +91,19 @@ module eca_top #(
 //bitmatrix memory user IF:
 	input user_bm_mem_wr_req,
 	input [BM_MEM_W-1:0] user_bm_mem_wr_data,
-	input [BM_MEM_ADDR_w-1:0] user_bm_mem_wr_addr,
+	input [BM_MEM_ADDR_W-1:0] user_bm_mem_wr_addr,
 
 //input buffer IF:
 	input inbuf_wr_req,
+    output inbuf_user_wr_ack,
+    output inbuf_user_full,
 	input [INBUF_DATA_W-1:0] inbuf_wr_data,
 
 //output buffer IF:
-	output outbuf_rd_req,
+	input outbuf_rd_req,
 	output outbuf_rd_data_val,
-	output [INBUF_DATA_W-1:0] outbuf_rd_data
+    output outbuf_user_rd_ack,
+	output [OUTBUF_DATA_W-1:0] outbuf_rd_data
 
 
 );
@@ -86,6 +111,8 @@ module eca_top #(
 //======================
 //  signals declaration:
 //======================
+
+logic [MREG_W-1:0] MReg;
 
 // engine top:
 
@@ -107,16 +134,20 @@ logic eng_rstn_o;
 logic cntrl_inbuff_rd_en;
 logic cntrl_outbuff_wr_en;
 logic cntrl_eng_calc_en;
-logic [W-1:0] bm_col_data_out [0:W-1] [0:K_MAX-1];
+logic [W-1:0] bm_col_data_out [0:K_MAX-1] [0:W-1];
 logic bm_coloum_data_out_val;
+logic cntl_inbuf_fifo_mem_en;
 
 // IF between control & bm mem
-logic [BM_COL_W-1:0] bm_mem_bm_cntl_rd_data;
+logic [BM_MEM_W-1:0] bm_mem_bm_cntl_rd_data;
 logic bm_mem_bm_cntl_rd_data_val;
 logic bm_cntl_bm_mem_rd_rq;
 logic [BM_MEM_ADDR_W-1:0] bm_cntl_bm_mem_rd_addr;
 
-logic [BM_MEM_ADDR_w-1:0] bm_mem_addr,
+logic [BM_MEM_ADDR_W-1:0] bm_mem_addr;
+
+// outbuf:
+logic outbuf_fifo_cntl_empty;
 
 //==============================
 //  local logic:
@@ -126,12 +157,10 @@ logic [BM_MEM_ADDR_w-1:0] bm_mem_addr,
 
 always_ff @(posedge clk or negedge rstn) begin
 	if(~rstn) begin
-		bm_col_counter	<=	{M_MAX{1'b0}};
+		MReg	<=	{MREG_W{1'b0}};
 	end else begin
-		if(m_val_wr_req) begin
-			if(bm_col_counter >= bm_col_counter_max_value) begin // wrap around when reaching M-1
-				bm_col_counter	<=	{M_MAX{1'b0}};
-			end
+		if(m_val_wr) begin
+			MReg	<=	m_val;
 		end
 	end
 end
@@ -145,14 +174,22 @@ end
 //------- engine top start --------//
 
 
-module engine_top engine_top_i (
+engine_top #(
+    .K_MAX(K_MAX),
+	.K_MIN(K_MIN),
+	.M_MAX(M_MAX),
+	.M_MIN(M_MIN),
+	.W(W),
+	.PACKET_LENGTH(PACKET_LENGTH),
+	.BM_MULT_UNIT_NUM(BM_MULT_UNIT_NUM)
+
+)engine_top_i (
 
 	.clk                            ( clk                         )
 	,.rstn                          ( rstn                        )
 	,.eng_rstn                      ( eng_rstn                    )
 	,.bmu_bm_mux_sel_reg_wr         (  bmu_bm_mux_sel_reg_wr	  )                                                                                          
 	,.bmu_bm_mux_sel_reg_din		( bmu_bm_mux_sel_reg_din	  )
-	,.
 	,.and_mask_mask_reg_wr			( and_mask_mask_reg_wr		  )
 	,.and_mask_mask_reg_din			( and_mask_mask_reg_din		  )
 
@@ -181,9 +218,16 @@ module engine_top engine_top_i (
 
 //------- control top start --------//
 
-module control_top control_top_i #(
+control_top #(
+    .K_MAX(K_MAX),
+	.K_MIN(K_MIN),
+	.M_MAX(M_MAX),
+	.M_MIN(M_MIN),
+	.W(W),
+	.PACKET_LENGTH(PACKET_LENGTH)
+) control_top_i (
 
-	,.clk                            ( clk                        )
+	.clk                            ( clk                        )
 	,.rstn                           ( rstn                       )
 	//input from engine
 	,.eng_empty                      ( eng_pl_empty               )
@@ -221,9 +265,9 @@ module control_top control_top_i #(
 
 //------- bitmatrix memory sram start --------//
 
-assign bm_mem_addr = (user_bm_mem_wr_req ? user_bm_mem_addr : bm_cntl_bm_mem_rd_addr);
+assign bm_mem_addr = (user_bm_mem_wr_req ? user_bm_mem_wr_addr : bm_cntl_bm_mem_rd_addr);
 
-module sram_wrapper #(
+sram_wrapper #(
 
 	.SRAM_WRAP_WIDTH(BM_MEM_W)	
 	,.SRAM_WRAP_DEPTH(BM_MEM_DEPTH)
@@ -234,7 +278,7 @@ bit_matrix_memory_i
 	.clk(clk)
 	,.rst_n(rstn)
 	
-	,.mem_en(EcaEnReg)
+	,.mem_en(1'b1)//TODO - set
 	,.rd_req(bm_cntl_bm_mem_rd_rq)
 	,.wr_req(user_bm_mem_wr_req)
 	,.address(bm_mem_addr)
@@ -248,22 +292,26 @@ bit_matrix_memory_i
 
 
 //-------output buffer start  --------//
-module sram_fifo output_buffer_i #(
+output_buffer  #(
 
-	.SRAM_WRAP_WIDTH//TODO
-	.SRAM_WRAP_DEPTH//TODO
-)(
-.clk(clk)
-,.rst_n(rst_n)
-,.wr_req(eng_outbuf_wr_req)
-,.rd_req(user_outbuf_rd_req)
-,.mem_en(outbuf_mem_en)
-,.wr_data_in(eng_outbuf_data)
-,.rd_data_val(outbuf_user_rd_data_val)
-,.rd_data(outbuf_user_rd_data)
-,.wr_ack(wr_ack)
-,.full(full)
-,.empty(empty)
+	.PACKET_LENGTH(PACKET_LENGTH),         
+	.W(W),                     
+    .PCK_TREE_XOR_UNITS_NUM( PCK_TREE_XOR_UNITS_NUM),  
+    .OUTBUF_MEM_DEPTH( OUTBUF_MEM_DEPTH)        
+
+)output_buffer_i(
+    .clk(clk)
+    ,.rst_n(rstn)
+    ,.cntrl_outbuff_wr_en(cntrl_outbuff_wr_en)
+    ,.eng_outbuf_wr_req(eng_outbuf_wr_req)
+    ,.user_outbuf_rd_req(outbuf_rd_req)
+    ,.outbuf_wr_data(eng_outbuf_dout_reg)
+    ,.outbuf_fifo_cntl_empty(outbuf_fifo_cntl_empty)
+    ,.outbuf_dout_reg_val(outbuf_rd_data_val)
+    ,.outbuf_dout_reg(outbuf_rd_data)
+    ,.outbuf_eng_wr_ack(outbuf_eng_wr_ack)
+    ,.outbuf_eng_full(outbuf_eng_full)
+    ,.outbuf_user_rd_ack(outbuf_user_rd_ack)
 
 );
 
@@ -273,7 +321,14 @@ module sram_fifo output_buffer_i #(
 //-------input buffer start  --------//
 
 
-module input_buffer input_buffer_i #(
+input_buffer #(
+	.PACKET_LENGTH(PACKET_LENGTH),         
+	.W(W),                     
+    .BM_MULT_UNIT_NUM(BM_MULT_UNIT_NUM),
+    .INBUF_DATA_DEPTH(INBUF_DATA_DEPTH)
+) input_buffer_i (
+    .clk(clk)
+    ,.rst_n(rstn)
 	,.cntl_inbuf_fifo_rd_rq(cntl_inbuf_fifo_rd_rq)
 	,.cntl_inbuf_fifo_mem_en(cntl_inbuf_fifo_mem_en)
 	,.inbuf_wr_req(inbuf_wr_req)
@@ -281,6 +336,8 @@ module input_buffer input_buffer_i #(
 	,.inbuf_fifo_cntl_empty(inbuf_fifo_cntl_empty)
 	,.inbuf_dout_reg_val(inbuf_eng_din_reg_val)
 	,. inbuf_dout_reg( inbuf_eng_din_reg) 
+    ,.wr_ack(inbuf_user_wr_ack)
+    ,.inbuf_user_full(inbuf_user_full)
 
 
 );

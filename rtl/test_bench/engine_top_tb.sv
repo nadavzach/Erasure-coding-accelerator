@@ -38,10 +38,19 @@ module engine_top_tb#(
 
 	//control
 	
+	logic [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_din [0:BM_MULT_UNIT_NUM-1];
 	logic [W-1:0] cntl_eng_bm_col_din_reg [0:K_MAX-1][0:W-1];
 	logic cntl_eng_bm_col_din_reg_val;
 	logic cntrl_eng_calc_en;
 	logic global_reg_wr_en;
+
+    //user -temp
+
+	logic bmu_bm_mux_sel_reg_wr;
+	logic [BMU_BM_MUX_SEL_W-1:0] bmu_bm_mux_sel_reg_din [0:BM_MULT_UNIT_NUM-1];
+
+	logic and_mask_mask_reg_wr;
+	logic  [0:K_MAX-1] and_mask_mask_reg_din [0:PCK_TREE_XOR_UNITS_NUM-1];
 
 	//outbuff
 	
@@ -65,14 +74,30 @@ module engine_top_tb#(
 	 //Init
 	 initial
 	 begin
-		clk		    	 = 1'b0;
+		clk	= 1'b0;
+        rst_n = 1'b0;
+        eng_rstn = 1'b0;
 		inbuf_eng_din_reg_val = 1'b0;
 		cntl_eng_bm_col_din_reg_val = 1'b0;
 		cntrl_eng_calc_en = 1'b0;
 		global_reg_wr_en = 1'b0;
-		 
+		bmu_bm_mux_sel_reg_wr = 1'b0;
+        and_mask_mask_reg_wr = 1'b0;
+
 		#(4*CLK_CYCLE)
-		
+        rst_n = 1'b1;
+        eng_rstn = 1'b1;
+
+
+		#(4*CLK_CYCLE)
+	    bmu_bm_mux_sel_reg_wr = 1'b1;
+        and_mask_mask_reg_wr = 1'b1;
+
+		#(4*CLK_CYCLE)
+        bmu_bm_mux_sel_reg_wr = 1'b0;
+        and_mask_mask_reg_wr = 1'b0;
+
+
 		inbuf_eng_din_reg_val = 1'b1;
 		cntl_eng_bm_col_din_reg_val = 1'b1;
 		cntrl_eng_calc_en = 1'b1;
@@ -102,9 +127,14 @@ module engine_top_tb#(
 	
 	//input
 	.clk(clk),
-	.rstn(1'b1),
-	.eng_rstn(1'b1),
-	
+	.rstn(rst_n),
+	.eng_rstn(eng_rstn),
+
+	.bmu_bm_mux_sel_reg_wr(bmu_bm_mux_sel_reg_wr),
+    .bmu_bm_mux_sel_reg_din(bmu_bm_mux_sel_reg_din),
+    .and_mask_mask_reg_wr(and_mask_mask_reg_wr),
+    .and_mask_mask_reg_din(and_mask_mask_reg_din),
+
 	.inbuf_eng_din_reg(inbuf_eng_din_reg), 
 	.inbuf_eng_din_reg_val(inbuf_eng_din_reg_val),
 
@@ -138,145 +168,99 @@ module engine_top_tb#(
  initial
  begin
 	
-	inbuf_eng_din_reg[0][0][0] = {1'b1,1'b0};
-	inbuf_eng_din_reg[1][0][0] = {1'b1,1'b0};
-	inbuf_eng_din_reg[2][0][0] = {1'b0,1'b0};
-	inbuf_eng_din_reg[3][0][0] = {1'b1,1'b1};
+	inbuf_eng_din_reg[0][0] = {1'b1,1'b1};
 	
-	inbuf_eng_din_reg[0][1][0] = {1'b1,1'b1};
-	inbuf_eng_din_reg[1][1][0] = {1'b0,1'b1};
-	inbuf_eng_din_reg[2][1][0] = {1'b0,1'b0};
-	inbuf_eng_din_reg[3][1][0] = {1'b1,1'b0};
+	inbuf_eng_din_reg[0][1] = {1'b1,1'b1};
 	
-	inbuf_eng_din_reg[0][2][0] = {1'b0,1'b0};
-	inbuf_eng_din_reg[1][2][0] = {1'b1,1'b0};
-	inbuf_eng_din_reg[2][2][0] = {1'b1,1'b1};
-	inbuf_eng_din_reg[3][2][0] = {1'b1,1'b0};
+	inbuf_eng_din_reg[0][2] = {1'b0,1'b1};
 	
-	inbuf_eng_din_reg[0][3][0] = {1'b1,1'b0};
-	inbuf_eng_din_reg[1][3][0] = {1'b1,1'b0};
-	inbuf_eng_din_reg[2][3][0] = {1'b0,1'b0};
-	inbuf_eng_din_reg[3][3][0] = {1'b1,1'b1};
+	inbuf_eng_din_reg[0][3] = {1'b0,1'b0};
 	
-	///////////////////////////////////////////
-	///////////////////////////////////////////
 	
-	inbuf_eng_din_reg[0][0][1] = {1'b1,1'b1};
-	inbuf_eng_din_reg[1][0][1] = {1'b1,1'b0};
-	inbuf_eng_din_reg[2][0][1] = {1'b0,1'b0};
-	inbuf_eng_din_reg[3][0][1] = {1'b1,1'b0};
+	inbuf_eng_din_reg[1][0] = {1'b1,1'b1};
 	
-	inbuf_eng_din_reg[0][1][1] = {1'b1,1'b1};
-	inbuf_eng_din_reg[1][1][1] = {1'b1,1'b0};
-	inbuf_eng_din_reg[2][1][1] = {1'b1,1'b0};
-	inbuf_eng_din_reg[3][1][1] = {1'b1,1'b1};
+	inbuf_eng_din_reg[1][1] = {1'b1,1'b1};
 	
-	inbuf_eng_din_reg[0][2][1] = {1'b0,1'b1};
-	inbuf_eng_din_reg[1][2][1] = {1'b0,1'b1};
-	inbuf_eng_din_reg[2][2][1] = {1'b1,1'b0};
-	inbuf_eng_din_reg[3][2][1] = {1'b1,1'b1};
+	inbuf_eng_din_reg[1][2] = {1'b0,1'b1};
 	
-	inbuf_eng_din_reg[0][3][1] = {1'b1,1'b0};
-	inbuf_eng_din_reg[1][3][1] = {1'b0,1'b0};
-	inbuf_eng_din_reg[2][3][1] = {1'b1,1'b1};
-	inbuf_eng_din_reg[3][3][1] = {1'b0,1'b1};
+	inbuf_eng_din_reg[1][3] = {1'b1,1'b1};
+
+
+	inbuf_eng_din_reg[2][0] = {1'b1,1'b1};
 	
-	///////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
+	inbuf_eng_din_reg[2][1] = {1'b1,1'b1};
+	
+	inbuf_eng_din_reg[2][2] = {1'b1,1'b1};
+	
+	inbuf_eng_din_reg[2][3] = {1'b1,1'b1};
+
+
+	inbuf_eng_din_reg[3][0] = {1'b1,1'b1};
+	
+	inbuf_eng_din_reg[3][1] = {1'b0,1'b1};
+	
+	inbuf_eng_din_reg[3][2] = {1'b0,1'b0};
+	
+	inbuf_eng_din_reg[3][3] = {1'b0,1'b0};
+
 	/////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////
 	
-	cntl_eng_bm_col_din_reg[0][0][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][0][1] = {1'b1,1'b0,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][0][2] = {1'b1,1'b1,1'b1,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][0][3] = {1'b1,1'b0,1'b1,1'b1} ;
+	cntl_eng_bm_col_din_reg[0][0] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[0][1][0] = {1'b0,1'b0,1'b1,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][1][1] = {1'b0,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][1][2] = {1'b1,1'b0,1'b1,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][1][3] = {1'b1,1'b0,1'b1,1'b1} ;
+	cntl_eng_bm_col_din_reg[0][1] = {1'b0,1'b0,1'b1,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[0][2][0] = {1'b0,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][2][1] = {1'b0,1'b1,1'b0,1'b0} ;
-	cntl_eng_bm_col_din_reg[0][2][2] = {1'b0,1'b1,1'b0,1'b0} ;
-	cntl_eng_bm_col_din_reg[0][2][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[0][2] = {1'b0,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[0][3][0] = {1'b1,1'b1,1'b0,1'b0} ;
-	cntl_eng_bm_col_din_reg[0][3][1] = {1'b0,1'b0,1'b1,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][3][2] = {1'b0,1'b0,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[0][3][3] = {1'b1,1'b0,1'b1,1'b1} ;
+	cntl_eng_bm_col_din_reg[0][3] = {1'b1,1'b1,1'b0,1'b0} ;
 	
 	////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////
 	
-	cntl_eng_bm_col_din_reg[1][0][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][0][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][0][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][0][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[1][0] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[1][1][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][1][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][1][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][1][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[1][1] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[1][2][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][2][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][2][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][2][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[1][2] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[1][3][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][3][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][3][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[1][3][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[1][3] = {1'b1,1'b1,1'b0,1'b1} ;
 	
 	////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////
 	
-	cntl_eng_bm_col_din_reg[2][0][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][0][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][0][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][0][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[2][0] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[2][1][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][1][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][1][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][1][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[2][1] = {1'b0,1'b1,1'b0,1'b0} ;
 	
-	cntl_eng_bm_col_din_reg[2][2][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][2][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][2][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][2][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[2][2] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[2][3][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][3][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][3][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[2][3][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[2][3] = {1'b0,1'b1,1'b1,1'b0} ;
 	
 	////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////
 	
-	cntl_eng_bm_col_din_reg[3][0][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][0][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][0][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][0][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[3][0] = {1'b0,1'b1,1'b1,1'b0} ;
 	
-	cntl_eng_bm_col_din_reg[3][1][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][1][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][1][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][1][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[3][1] = {1'b1,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[3][2][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][2][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][2][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][2][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[3][2] = {1'b0,1'b1,1'b0,1'b1} ;
 	
-	cntl_eng_bm_col_din_reg[3][3][0] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][3][1] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][3][2] = {1'b1,1'b1,1'b0,1'b1} ;
-	cntl_eng_bm_col_din_reg[3][3][3] = {1'b1,1'b1,1'b0,1'b1} ;
+	cntl_eng_bm_col_din_reg[3][3] = {1'b1,1'b1,1'b1,1'b1} ;
 	
 	////////////////////////////////////////////////////////////
+                //  bm mult unit mux sel regs
 	////////////////////////////////////////////////////////////
+    bmu_bm_mux_sel_reg_din[0] = {1'b0,1'b0};
+    bmu_bm_mux_sel_reg_din[1] = {1'b0,1'b1};
+    bmu_bm_mux_sel_reg_din[2] = {1'b0,1'b0};
+    bmu_bm_mux_sel_reg_din[3] = {1'b0,1'b1};
+
+	////////////////////////////////////////////////////////////
+                //  mask regs
+	////////////////////////////////////////////////////////////
+    and_mask_mask_reg_din [0] = {1'b0,1'b0,1'b1,1'b1};
+    and_mask_mask_reg_din [1] = {1'b0,1'b0,1'b1,1'b1};
+
 
  end
 

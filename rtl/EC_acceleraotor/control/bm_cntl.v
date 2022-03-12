@@ -37,16 +37,17 @@ module bm_cntl #(
 	parameter PACKET_LENGTH =  2,
 
 
+//=================================
+//  local parameters (DON'T CHANGE)
+//=================================
+
+    parameter MREG_W    = $clog2(M_MAX),
 	//bitmatrix memory parameters:
 
 	parameter BM_MEM_DEPTH = M_MAX,
 	parameter BM_COL_W = W*W*K_MAX,
 	parameter BM_MEM_W = BM_COL_W,
-	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_W)
-//=================================
-//  local parameters (DON'T CHANGE)
-//=================================
-
+	parameter BM_MEM_ADDR_W = $clog2(BM_MEM_DEPTH)
 
 )(
 //===========
@@ -62,12 +63,12 @@ module bm_cntl #(
 	//input from engine
 	input eng_bm_cntl_data_used,
 	//input from control regs:
-	input MReg,
+	input [MREG_W-1:0] MReg,
 
 //===========
 //  outputs:
 //===========
-	output [W-1:0] bm_col_data_out [0:W-1] [0:K_MAX-1],
+	output [W-1:0] bm_col_data_out [0:K_MAX-1] [0:W-1],
 	output reg bm_coloum_data_out_val,
 //====================
 //  bitmatrix mem I/F:
@@ -156,12 +157,13 @@ genvar i,j;
 generate 
 	for(i=0;i<K_MAX;i=i+1) begin
 		for(j=0;j<W;j=j+1) begin
-			assign bm_col_data_out[j][i] = bm_coloum_data_out_reg[i*j*W +: W];
+			assign bm_col_data_out[i][W-1-j] = bm_coloum_data_out_reg[(i*W+j)*W +: W];
 		end
 	end
 endgenerate
 
 //TODO - hard code bm_mem_col_addr_arr addresses
-assign bm_cntl_bm_mem_rd_addr = bm_mem_col_addr_arr[bm_col_counter];
+//assign bm_cntl_bm_mem_rd_addr = bm_mem_col_addr_arr[bm_col_counter];
 
+assign bm_cntl_bm_mem_rd_addr = bm_col_counter; // TODO - temp assign
 endmodule
