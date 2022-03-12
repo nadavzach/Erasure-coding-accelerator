@@ -57,8 +57,9 @@ module mask_unit #(
 //======================
 	
 logic [PACKET_LENGTH-1:0] mask_ext	[0:W-1][0:MASK_W-1]; 	
-genvar i,j;
-generate
+	genvar i,j;
+	generate
+	
 		for (i=0; i<W; i=i+1) begin
 			for (j=0; j<MASK_W; j=j+1) begin
                 assign mask_ext[i][j] = (mask[j] ? {PACKET_LENGTH{1'b1}} : {PACKET_LENGTH{1'b0}}); 
